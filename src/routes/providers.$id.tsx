@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
+  ArrowLeft,
   BadgeCheck,
   CalendarDays,
   Globe,
@@ -10,9 +11,11 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
-import { getProvider, providers, type Provider } from "@/lib/providers";
+import { getProvider, providers, getCountry, type Provider } from "@/lib/providers";
+import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
 import { Reveal } from "@/components/site/Reveal";
 import ProviderCard from "@/components/site/ProviderCard";
+
 
 export const Route = createFileRoute("/providers/$id")({
   loader: ({ params }): { provider: Provider } => {
