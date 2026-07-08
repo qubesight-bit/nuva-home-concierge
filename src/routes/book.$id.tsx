@@ -2,9 +2,11 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Star } from "lucide-react";
-import { getProvider, SERVICES, EXTRAS, type Provider } from "@/lib/providers";
+import { getCountry, getProvider, SERVICES, EXTRAS } from "@/lib/providers";
+import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
 
 export const Route = createFileRoute("/book/$id")({
+  validateSearch: browseSearchValidator,
   loader: ({ params }) => {
     const provider = getProvider(params.id);
     if (!provider) throw notFound();
@@ -35,6 +37,7 @@ export const Route = createFileRoute("/book/$id")({
   ),
   component: BookingFlow,
 });
+
 
 const stepLabels = ["Service", "Date & time", "Extras", "Review"];
 const times = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
