@@ -99,9 +99,14 @@ function BookingFlow() {
           <Link to="/dashboard" className="rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground">
             View in dashboard
           </Link>
-          <Link to="/browse" className="rounded-full border border-border bg-card px-7 py-3.5 text-sm font-semibold">
+          <Link
+            to="/browse"
+            search={{ country: search.country, category: search.category }}
+            className="rounded-full border border-border bg-card px-7 py-3.5 text-sm font-semibold"
+          >
             Browse more
           </Link>
+
         </div>
       </div>
     );
