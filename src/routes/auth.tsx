@@ -37,6 +37,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [docType, setDocType] = useState<(typeof DOC_TYPES)[number]["id"]>("passport");
   const [file, setFile] = useState<File | null>(null);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   useEffect(() => {
     if (!loading && user && !signupComplete) navigate({ to: "/dashboard" });
@@ -55,6 +56,7 @@ function AuthPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!ageConfirmed) return setError("You must confirm you are at least 18 years old.");
     if (!file) return setError("Please upload a photo of your ID document.");
     if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
@@ -219,6 +221,21 @@ function AuthPage() {
                     Your ID is encrypted, visible only to Nuva admins for age & identity verification, and never shared with clients or providers.
                   </p>
                 </div>
+                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-input bg-background px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={ageConfirmed}
+                    onChange={(e) => setAgeConfirmed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-gold"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    I confirm that I am at least 18 years old. Providing false age
+                    information may result in immediate account termination. See our{" "}
+                    <Link to="/age-verification" className="underline underline-offset-2">
+                      Age Verification Policy
+                    </Link>.
+                  </span>
+                </label>
               </>
             )}
 
@@ -230,7 +247,7 @@ function AuthPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (mode === "register" && !ageConfirmed)}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:shadow-lift disabled:opacity-60"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
