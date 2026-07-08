@@ -68,6 +68,38 @@ function BookingFlow() {
   const [duration, setDuration] = useState(3);
   const [extras, setExtras] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  async function confirmBooking() {
+    setError(null);
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    setSaving(true);
+    // Only persist bookings for real DB provider ids (UUIDs). Mock listings stay UI-only.
+    if (UUID_RE.test(provider.id)) {
+      const { error: insertError } = await supabase.from("bookings").insert({
+        client_user_id: user.id,
+        provider_id: provider.id,
+        service: selectedService.name,
+        booking_date: date,
+        booking_time: time,
+        duration_hours: duration,
+        extras,
+        total_cents: total * 100,
+      });
+      if (insertError) {
+        setSaving(false);
+        return setError(insertError.message);
+      }
+    }
+    setSaving(false);
+    setConfirmed(true);
+  }
 
   const days = useMemo(() => nextDays(10), []);
   const selectedService = SERVICES.find((s) => s.id === service)!;
