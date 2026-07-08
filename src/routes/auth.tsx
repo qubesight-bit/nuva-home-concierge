@@ -30,6 +30,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ageError, setAgeError] = useState<string | null>(null);
   const [signupComplete, setSignupComplete] = useState(false);
 
   // form state
