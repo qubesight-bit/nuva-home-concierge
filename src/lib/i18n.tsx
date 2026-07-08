@@ -14,20 +14,6 @@ export const LANGS = {
 
 export type Lang = keyof typeof LANGS;
 
-type Dict = Record<string, string>;
-
-const DICTS: Record<Lang, Dict> = {
-  en: { home: "Home", browse: "Browse Providers", pricing: "Pricing", safety: "Safety", faq: "FAQ", login: "Log in", dashboard: "Dashboard", book: "Book Now", language: "Language" },
-  es: { home: "Inicio", browse: "Ver Proveedores", pricing: "Precios", safety: "Seguridad", faq: "Preguntas", login: "Ingresar", dashboard: "Panel", book: "Reservar", language: "Idioma" },
-  pt: { home: "Início", browse: "Ver Prestadores", pricing: "Preços", safety: "Segurança", faq: "Perguntas", login: "Entrar", dashboard: "Painel", book: "Reservar", language: "Idioma" },
-  fr: { home: "Accueil", browse: "Voir Prestataires", pricing: "Tarifs", safety: "Sécurité", faq: "FAQ", login: "Connexion", dashboard: "Tableau", book: "Réserver", language: "Langue" },
-  de: { home: "Startseite", browse: "Anbieter", pricing: "Preise", safety: "Sicherheit", faq: "FAQ", login: "Anmelden", dashboard: "Dashboard", book: "Buchen", language: "Sprache" },
-  it: { home: "Home", browse: "Fornitori", pricing: "Prezzi", safety: "Sicurezza", faq: "FAQ", login: "Accedi", dashboard: "Pannello", book: "Prenota", language: "Lingua" },
-  zh: { home: "首页", browse: "浏览服务者", pricing: "价格", safety: "安全", faq: "常见问题", login: "登录", dashboard: "控制台", book: "立即预订", language: "语言" },
-  ja: { home: "ホーム", browse: "プロバイダー", pricing: "料金", safety: "安全", faq: "FAQ", login: "ログイン", dashboard: "ダッシュボード", book: "予約する", language: "言語" },
-  ar: { home: "الرئيسية", browse: "المزودون", pricing: "الأسعار", safety: "الأمان", faq: "الأسئلة", login: "تسجيل الدخول", dashboard: "لوحة التحكم", book: "احجز الآن", language: "اللغة" },
-};
-
 const COUNTRY_LANG: Record<string, Lang> = {
   US: "en", GB: "en", CA: "en", AU: "en", NZ: "en", IE: "en",
   ES: "es", MX: "es", AR: "es", CO: "es", CL: "es", PE: "es", VE: "es", CR: "es", GT: "es", DO: "es", EC: "es", BO: "es", UY: "es", PY: "es", PA: "es", HN: "es", SV: "es", NI: "es", CU: "es",
@@ -41,39 +27,107 @@ const COUNTRY_LANG: Record<string, Lang> = {
 };
 
 const STORAGE_KEY = "nuva.lang";
+const COOKIE = "googtrans";
 
-type I18nCtx = { lang: Lang; setLang: (l: Lang) => void; t: (k: string) => string };
-const Ctx = createContext<I18nCtx>({ lang: "en", setLang: () => {}, t: (k) => k });
+function setGoogTransCookie(lang: Lang) {
+  if (typeof document === "undefined") return;
+  const value = lang === "en" ? "" : `/en/${lang}`;
+  // Set for current host + parent domain so Google Translate picks it up.
+  const host = window.location.hostname;
+  const domains = [host, "." + host, "." + host.split(".").slice(-2).join(".")];
+  const expire = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  for (const d of domains) {
+    document.cookie = `${COOKIE}=${value}; path=/; domain=${d}; expires=${expire}`;
+  }
+  document.cookie = `${COOKIE}=${value}; path=/; expires=${expire}`;
+  if (!value) {
+    // Clear cookie to return to English
+    for (const d of domains) {
+      document.cookie = `${COOKIE}=; path=/; domain=${d}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    }
+    document.cookie = `${COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  }
+}
+
+function readCookieLang(): Lang | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|; )googtrans=([^;]+)/);
+  if (!m) return null;
+  const parts = decodeURIComponent(m[1]).split("/");
+  const code = parts[2] as Lang | undefined;
+  return code && code in LANGS ? code : null;
+}
+
+type I18nCtx = { lang: Lang; setLang: (l: Lang) => void };
+const Ctx = createContext<I18nCtx>({ lang: "en", setLang: () => {} });
+
+// Injects Google Translate script + hidden mount point.
+function injectGoogleTranslate() {
+  if (typeof window === "undefined") return;
+  if ((window as any).__nuvaGT) return;
+  (window as any).__nuvaGT = true;
+
+  (window as any).googleTranslateElementInit = () => {
+    // @ts-expect-error - external global from Google Translate script
+    new window.google.translate.TranslateElement(
+      {
+        pageLanguage: "en",
+        includedLanguages: Object.keys(LANGS).filter((l) => l !== "en").join(","),
+        autoDisplay: false,
+        // @ts-expect-error - external global from Google Translate script
+        layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+      },
+      "google_translate_element",
+    );
+  };
+
+  const s = document.createElement("script");
+  s.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+  s.async = true;
+  document.body.appendChild(s);
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? (localStorage.getItem(STORAGE_KEY) as Lang | null) : null;
-    if (stored && stored in DICTS) {
+    injectGoogleTranslate();
+
+    const cookieLang = readCookieLang();
+    const stored = (localStorage.getItem(STORAGE_KEY) as Lang | null) ?? cookieLang;
+
+    if (stored && stored in LANGS) {
       setLangState(stored);
+      setGoogTransCookie(stored);
       return;
     }
-    // Browser fallback first
-    const browser = (typeof navigator !== "undefined" ? navigator.language.slice(0, 2) : "en") as Lang;
-    if (browser in DICTS) setLangState(browser);
 
-    // IP-based detection (overrides browser if country maps)
+    // Auto-detect from IP once
     let cancelled = false;
     fetch("https://ipapi.co/json/")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (cancelled || !data?.country_code) return;
-        const mapped = COUNTRY_LANG[data.country_code as string];
-        if (mapped && !localStorage.getItem(STORAGE_KEY)) setLangState(mapped);
+        if (cancelled) return;
+        const code = data?.country_code as string | undefined;
+        const mapped = code ? COUNTRY_LANG[code] : undefined;
+        if (mapped && mapped !== "en" && !localStorage.getItem(STORAGE_KEY)) {
+          localStorage.setItem(STORAGE_KEY, mapped);
+          setGoogTransCookie(mapped);
+          setLangState(mapped);
+          // Reload so Google Translate applies to already-rendered DOM
+          window.location.reload();
+        }
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
   const setLang = (l: Lang) => {
+    localStorage.setItem(STORAGE_KEY, l);
+    setGoogTransCookie(l);
     setLangState(l);
-    if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, l);
+    // Reload so the widget re-applies fresh translations to the whole page.
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -83,12 +137,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
   }, [lang]);
 
-  const value = useMemo<I18nCtx>(() => ({
-    lang,
-    setLang,
-    t: (k) => DICTS[lang][k] ?? DICTS.en[k] ?? k,
-  }), [lang]);
-
+  const value = useMemo<I18nCtx>(() => ({ lang, setLang }), [lang]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
