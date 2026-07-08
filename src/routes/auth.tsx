@@ -150,7 +150,7 @@ function AuthPage() {
             {(["login", "register"] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setError(null); }}
+                onClick={() => { setMode(m); setError(null); setAgeError(null); }}
                 className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all ${
                   mode === m ? "bg-card shadow-soft" : "text-muted-foreground"
                 }`}
