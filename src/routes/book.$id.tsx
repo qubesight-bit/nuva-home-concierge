@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Star } from "lucide-react";
-import { getProvider, SERVICES, EXTRAS } from "@/lib/providers";
+import { getProvider, SERVICES, EXTRAS, type Provider } from "@/lib/providers";
 
 export const Route = createFileRoute("/book/$id")({
   loader: ({ params }) => {

@@ -10,7 +10,7 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
-import { getProvider, providers } from "@/lib/providers";
+import { getProvider, providers, type Provider } from "@/lib/providers";
 import { Reveal } from "@/components/site/Reveal";
 import ProviderCard from "@/components/site/ProviderCard";
 
