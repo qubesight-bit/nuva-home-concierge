@@ -117,10 +117,28 @@ function BookingFlow() {
       <Link
         to="/providers/$id"
         params={{ id: provider.id }}
+        search={{ country: search.country, category: search.category }}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Back to profile
       </Link>
+
+      {hasFilter && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Booking from your filtered results:</span>
+          {activeCountry && (
+            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+              {activeCountry.flag} {activeCountry.name}
+            </span>
+          )}
+          {activeCategory !== "all" && (
+            <span className="rounded-full bg-gold-soft px-3 py-1 text-xs font-semibold text-gold-foreground">
+              {activeCategory === "trans-woman" ? "Trans Woman" : "Woman"}
+            </span>
+          )}
+        </div>
+      )}
+
 
       {/* Progress */}
       <div className="mt-8 flex items-center gap-2">
