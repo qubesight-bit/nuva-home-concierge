@@ -56,6 +56,7 @@ function AuthPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!ageConfirmed) return setError("You must confirm you are at least 18 years old.");
     if (!file) return setError("Please upload a photo of your ID document.");
     if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
