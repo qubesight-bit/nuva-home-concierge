@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save } from "lucide-react";
+import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/providers";
+import { updateBookingStatus } from "@/lib/bookings.functions";
+
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -209,20 +211,19 @@ function IncomingBookings({
   const pending = bookings.filter((b) => b.status === "pending");
 
   async function updateStatus(id: string, status: "confirmed" | "cancelled") {
-    if (!approved) {
-      setErr("Your ID must be approved before you can accept bookings.");
-      return;
-    }
     setErr(null);
     setBusyId(id);
-    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
-    setBusyId(null);
-    if (error) {
-      setErr(error.message);
-      return;
+    try {
+      await updateBookingStatus({ data: { bookingId: id, status } });
+      await onChanged();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not update booking.";
+      setErr(msg);
+    } finally {
+      setBusyId(null);
     }
-    await onChanged();
   }
+
 
   return (
     <section aria-labelledby="incoming-heading">
@@ -401,7 +402,10 @@ function ProviderEditor({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
+    <>
+    <PayoutStatusCard approved={approved} />
+    <div className="mt-6 grid gap-8 lg:grid-cols-[280px_1fr]">
+
       <div>
         <div className="aspect-[4/5] overflow-hidden rounded-3xl border border-border bg-secondary">
           {photoUrl ? (
@@ -448,8 +452,51 @@ function ProviderEditor({
         </button>
       </div>
     </div>
+    </>
   );
 }
+
+function PayoutStatusCard({ approved }: { approved: boolean }) {
+  if (approved) {
+    return (
+      <div
+        role="status"
+        data-testid="payout-status"
+        data-payout-enabled="true"
+        className="flex items-start gap-3 rounded-3xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-green-700 dark:text-green-400"
+      >
+        <Wallet className="mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p className="font-semibold">Payouts enabled</p>
+          <p className="text-sm opacity-90">
+            Your identity is verified. Stripe payouts will be released on your normal schedule
+            after each completed booking.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      role="alert"
+      data-testid="payout-status"
+      data-payout-enabled="false"
+      className="flex items-start gap-3 rounded-3xl border border-gold/40 bg-gold-soft px-5 py-4 text-gold-foreground"
+    >
+      <Wallet className="mt-0.5 h-5 w-5 shrink-0" />
+      <div>
+        <p className="font-semibold">Payouts on hold — ID verification pending</p>
+        <p className="mt-1 text-sm opacity-90">
+          Stripe payouts are disabled on your account until Nuva approves your government-issued
+          ID. Any bookings completed in the meantime will be held and released automatically once
+          your verification is approved. This is a legal requirement — not a manual step you can
+          skip.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 function AccountPanel({ profile, email }: { profile: Profile | null; email: string }) {
   return (
