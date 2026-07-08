@@ -9,12 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SafetyRouteImport } from './routes/safety'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BrowseRouteImport } from './routes/browse'
+import { Route as BecomeAProviderRouteImport } from './routes/become-a-provider'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProvidersIdRouteImport } from './routes/providers.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
 
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -23,6 +42,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const BrowseRoute = BrowseRouteImport.update({
   id: '/browse',
   path: '/browse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BecomeAProviderRoute = BecomeAProviderRouteImport.update({
+  id: '/become-a-provider',
+  path: '/become-a-provider',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,50 +67,109 @@ const BookIdRoute = BookIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/become-a-provider': typeof BecomeAProviderRoute
   '/browse': typeof BrowseRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
+  '/pricing': typeof PricingRoute
+  '/safety': typeof SafetyRoute
   '/book/$id': typeof BookIdRoute
   '/providers/$id': typeof ProvidersIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/become-a-provider': typeof BecomeAProviderRoute
   '/browse': typeof BrowseRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
+  '/pricing': typeof PricingRoute
+  '/safety': typeof SafetyRoute
   '/book/$id': typeof BookIdRoute
   '/providers/$id': typeof ProvidersIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/become-a-provider': typeof BecomeAProviderRoute
   '/browse': typeof BrowseRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
+  '/pricing': typeof PricingRoute
+  '/safety': typeof SafetyRoute
   '/book/$id': typeof BookIdRoute
   '/providers/$id': typeof ProvidersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/browse' | '/dashboard' | '/book/$id' | '/providers/$id'
+  fullPaths:
+    | '/'
+    | '/become-a-provider'
+    | '/browse'
+    | '/dashboard'
+    | '/faq'
+    | '/pricing'
+    | '/safety'
+    | '/book/$id'
+    | '/providers/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/browse' | '/dashboard' | '/book/$id' | '/providers/$id'
+  to:
+    | '/'
+    | '/become-a-provider'
+    | '/browse'
+    | '/dashboard'
+    | '/faq'
+    | '/pricing'
+    | '/safety'
+    | '/book/$id'
+    | '/providers/$id'
   id:
     | '__root__'
     | '/'
+    | '/become-a-provider'
     | '/browse'
     | '/dashboard'
+    | '/faq'
+    | '/pricing'
+    | '/safety'
     | '/book/$id'
     | '/providers/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BecomeAProviderRoute: typeof BecomeAProviderRoute
   BrowseRoute: typeof BrowseRoute
   DashboardRoute: typeof DashboardRoute
+  FaqRoute: typeof FaqRoute
+  PricingRoute: typeof PricingRoute
+  SafetyRoute: typeof SafetyRoute
   BookIdRoute: typeof BookIdRoute
   ProvidersIdRoute: typeof ProvidersIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -99,6 +182,13 @@ declare module '@tanstack/react-router' {
       path: '/browse'
       fullPath: '/browse'
       preLoaderRoute: typeof BrowseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/become-a-provider': {
+      id: '/become-a-provider'
+      path: '/become-a-provider'
+      fullPath: '/become-a-provider'
+      preLoaderRoute: typeof BecomeAProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -127,8 +217,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BecomeAProviderRoute: BecomeAProviderRoute,
   BrowseRoute: BrowseRoute,
   DashboardRoute: DashboardRoute,
+  FaqRoute: FaqRoute,
+  PricingRoute: PricingRoute,
+  SafetyRoute: SafetyRoute,
   BookIdRoute: BookIdRoute,
   ProvidersIdRoute: ProvidersIdRoute,
 }
