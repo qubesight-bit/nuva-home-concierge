@@ -30,6 +30,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ageError, setAgeError] = useState<string | null>(null);
   const [signupComplete, setSignupComplete] = useState(false);
 
   // form state
@@ -47,6 +48,7 @@ function AuthPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setAgeError(null);
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
@@ -57,7 +59,11 @@ function AuthPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!ageConfirmed) return setError("You must confirm you are at least 18 years old.");
+    setAgeError(null);
+    if (!ageConfirmed) {
+      setAgeError("You must confirm you are at least 18 years old to create an account.");
+      return;
+    }
     if (!file) return setError("Please upload a photo of your ID document.");
     if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
@@ -70,7 +76,13 @@ function AuthPage() {
       userId = result.userId;
     } catch (err) {
       setSubmitting(false);
-      return setError(err instanceof Error ? err.message : "Sign up failed.");
+      const message = err instanceof Error ? err.message : "Sign up failed.";
+      if (/age/i.test(message) || /18/i.test(message)) {
+        setAgeError("You must confirm you are at least 18 years old to create an account.");
+      } else {
+        setError(message);
+      }
+      return;
     }
 
     // Sign the new user in so RLS-scoped uploads work under their folder.
@@ -138,7 +150,7 @@ function AuthPage() {
             {(["login", "register"] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setError(null); }}
+                onClick={() => { setMode(m); setError(null); setAgeError(null); }}
                 className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all ${
                   mode === m ? "bg-card shadow-soft" : "text-muted-foreground"
                 }`}
@@ -224,7 +236,10 @@ function AuthPage() {
                   <input
                     type="checkbox"
                     checked={ageConfirmed}
-                    onChange={(e) => setAgeConfirmed(e.target.checked)}
+                    onChange={(e) => {
+                      setAgeConfirmed(e.target.checked);
+                      if (e.target.checked) setAgeError(null);
+                    }}
                     className="mt-0.5 h-4 w-4 shrink-0 accent-gold"
                   />
                   <span className="text-xs text-muted-foreground">
@@ -235,6 +250,11 @@ function AuthPage() {
                     </Link>.
                   </span>
                 </label>
+                {ageError && (
+                  <p className="text-xs text-destructive" role="alert">
+                    {ageError}
+                  </p>
+                )}
               </>
             )}
 
