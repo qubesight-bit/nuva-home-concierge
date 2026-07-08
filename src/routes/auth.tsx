@@ -37,6 +37,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [docType, setDocType] = useState<(typeof DOC_TYPES)[number]["id"]>("passport");
   const [file, setFile] = useState<File | null>(null);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   useEffect(() => {
     if (!loading && user && !signupComplete) navigate({ to: "/dashboard" });
