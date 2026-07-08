@@ -10,8 +10,17 @@ export const signupSchema = z.object({
   }),
 });
 
+/**
+ * Server-side validator for signup input. Exported so tests can attempt to
+ * bypass the UI by calling it directly with forged payloads and verify that
+ * the server-side gate still rejects them before any account is created.
+ */
+export function validateSignupInput(input: unknown) {
+  return signupSchema.parse(input);
+}
+
 export const registerAccount = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => signupSchema.parse(input))
+  .inputValidator(validateSignupInput)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
