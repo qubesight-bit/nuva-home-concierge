@@ -4,6 +4,7 @@ import { Lock, ShieldCheck, Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { Reveal } from "@/components/site/Reveal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { registerAccount } from "@/lib/auth-signup.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -61,27 +62,25 @@ function AuthPage() {
     if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
 
-    const { data: signUp, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name } },
-    });
-    if (signUpError || !signUp.user) {
+    let userId: string;
+    try {
+      const result = await registerAccount({
+        data: { email, password, displayName: name, ageConfirmed },
+      });
+      userId = result.userId;
+    } catch (err) {
       setSubmitting(false);
-      return setError(signUpError?.message ?? "Sign up failed.");
+      return setError(err instanceof Error ? err.message : "Sign up failed.");
     }
 
-    // We need an active session to upload under the user's folder (RLS uses auth.uid()).
-    // With auto-confirm on, signUp returns a session; if not, sign in explicitly.
-    if (!signUp.session) {
-      const { error: siError } = await supabase.auth.signInWithPassword({ email, password });
-      if (siError) {
-        setSubmitting(false);
-        return setError("Account created but sign-in failed: " + siError.message);
-      }
+    // Sign the new user in so RLS-scoped uploads work under their folder.
+    const { error: siError } = await supabase.auth.signInWithPassword({ email, password });
+    if (siError) {
+      setSubmitting(false);
+      return setError("Account created but sign-in failed: " + siError.message);
     }
 
-    const userId = signUp.user.id;
+
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
     const path = `${userId}/${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
