@@ -19,20 +19,31 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
             className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
           <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
-          {provider.instantBook && (
-            <span className="absolute left-4 top-4 flex items-center gap-1 rounded-full glass px-3 py-1.5 text-xs font-semibold">
-              <Zap className="h-3 w-3 text-gold" /> Instant Book
+          <div className="absolute left-4 right-4 top-4 flex flex-wrap items-center gap-2">
+            {provider.instantBook && (
+              <span className="flex items-center gap-1 rounded-full glass px-3 py-1.5 text-xs font-semibold">
+                <Zap className="h-3 w-3 text-gold" /> Instant Book
+              </span>
+            )}
+            <span className="flex items-center gap-1 rounded-full glass px-3 py-1.5 text-xs font-semibold">
+              <span aria-hidden>{provider.flag}</span> {provider.countryCode}
             </span>
-          )}
+            <span className="rounded-full bg-gold-soft px-3 py-1.5 text-xs font-semibold text-gold-foreground">
+              {provider.gender === "trans-woman" ? "Trans Woman" : "Woman"}
+            </span>
+          </div>
           <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between text-white">
             <div>
               <p className="flex items-center gap-1.5 text-lg font-semibold">
                 {provider.name}
                 <BadgeCheck className="h-4 w-4 text-gold" aria-label="Verified" />
               </p>
-              <p className="text-sm text-white/80">{provider.location}</p>
+              <p className="text-sm text-white/80">
+                {provider.location}, {provider.country}
+              </p>
             </div>
           </div>
+
         </div>
         <div className="p-5">
           <div className="flex items-center justify-between">

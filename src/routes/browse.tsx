@@ -1,30 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { LayoutGrid, Map, MapPin, Search, SlidersHorizontal, Star, X, Zap } from "lucide-react";
-import { providers } from "@/lib/providers";
+import { Globe2, LayoutGrid, Map, MapPin, Search, SlidersHorizontal, Star, Users, X, Zap } from "lucide-react";
+import { COUNTRIES, GENDERS, detectCountryCode, providers, type Gender } from "@/lib/providers";
 import ProviderCard from "@/components/site/ProviderCard";
 
 export const Route = createFileRoute("/browse")({
   head: () => ({
     meta: [
-      { title: "Browse Verified Housekeepers | Nuva" },
+      { title: "Browse Verified Housekeepers by Country | Nuva" },
       {
         name: "description",
         content:
-          "Explore verified, background-checked professional housekeepers. Filter by location, price, language, and rating.",
+          "Browse verified, background-checked professional housekeepers by country and category — women and trans women. Strictly non-sexual nude housekeeping.",
       },
-      { property: "og:title", content: "Browse Verified Housekeepers | Nuva" },
-      { property: "og:description", content: "Explore verified, background-checked professional housekeepers near you." },
+      { property: "og:title", content: "Browse Verified Housekeepers by Country | Nuva" },
+      { property: "og:description", content: "Filter by country, category, price, language, and rating." },
     ],
   }),
   component: BrowsePage,
 });
 
 const allLanguages = [...new Set(providers.flatMap((p) => p.languages))].sort();
+// Countries that currently have at least one provider — only show these in the picker
+const availableCountries = COUNTRIES.filter((c) =>
+  providers.some((p) => p.countryCode === c.code),
+);
+
+type CategoryFilter = "all" | Gender;
 
 function BrowsePage() {
   const [query, setQuery] = useState("");
+  const [country, setCountry] = useState<string>(""); // "" = all countries
+  const [category, setCategory] = useState<CategoryFilter>("all");
   const [maxRate, setMaxRate] = useState(60);
   const [language, setLanguage] = useState<string>("");
   const [minRating, setMinRating] = useState(0);
@@ -32,22 +40,53 @@ function BrowsePage() {
   const [view, setView] = useState<"list" | "map">("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // Auto-select the viewer's country on first client render, if we have providers there.
+  useEffect(() => {
+    const detected = detectCountryCode();
+    if (availableCountries.some((c) => c.code === detected)) {
+      setCountry(detected);
+    }
+  }, []);
+
   const filtered = useMemo(
     () =>
       providers.filter(
         (p) =>
           (p.name.toLowerCase().includes(query.toLowerCase()) ||
-            p.location.toLowerCase().includes(query.toLowerCase())) &&
+            p.location.toLowerCase().includes(query.toLowerCase()) ||
+            p.country.toLowerCase().includes(query.toLowerCase())) &&
+          (!country || p.countryCode === country) &&
+          (category === "all" || p.gender === category) &&
           p.rate <= maxRate &&
           (!language || p.languages.includes(language)) &&
           p.rating >= minRating &&
           (!instantOnly || p.instantBook),
       ),
-    [query, maxRate, language, minRating, instantOnly],
+    [query, country, category, maxRate, language, minRating, instantOnly],
   );
+
+  const activeCountry = availableCountries.find((c) => c.code === country);
 
   const filterPanel = (
     <div className="space-y-6">
+      <div>
+        <label htmlFor="country" className="flex items-center gap-2 text-sm font-semibold">
+          <Globe2 className="h-4 w-4 text-gold" /> Country
+        </label>
+        <select
+          id="country"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="mt-3 w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm shadow-soft outline-none transition-shadow focus:ring-2 focus:ring-ring/40"
+        >
+          <option value="">All countries</option>
+          {availableCountries.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag}  {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <div>
         <label htmlFor="max-rate" className="text-sm font-semibold">
           Max hourly rate — <span className="text-gold-foreground">${maxRate}</span>
@@ -55,7 +94,7 @@ function BrowsePage() {
         <input
           id="max-rate"
           type="range"
-          min={40}
+          min={30}
           max={60}
           value={maxRate}
           onChange={(e) => setMaxRate(Number(e.target.value))}
@@ -118,7 +157,8 @@ function BrowsePage() {
         <div>
           <h1 className="text-3xl font-bold sm:text-4xl">Browse professionals</h1>
           <p className="mt-2 text-muted-foreground">
-            {filtered.length} verified housekeeper{filtered.length !== 1 && "s"} available
+            {filtered.length} verified housekeeper{filtered.length !== 1 && "s"}
+            {activeCountry ? ` in ${activeCountry.flag} ${activeCountry.name}` : " worldwide"}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
@@ -143,13 +183,41 @@ function BrowsePage() {
         </div>
       </div>
 
-      <div className="mt-8 flex gap-3">
+      {/* Category tabs */}
+      <div
+        role="tablist"
+        aria-label="Provider category"
+        className="mt-8 inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft"
+      >
+        {(
+          [
+            { id: "all" as const, label: "All", icon: Users },
+            ...GENDERS.map((g) => ({ id: g.id, label: g.label, icon: Users })),
+          ]
+        ).map((c) => (
+          <button
+            key={c.id}
+            role="tab"
+            aria-selected={category === c.id}
+            onClick={() => setCategory(c.id)}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              category === c.id
+                ? "bg-primary text-primary-foreground shadow-soft"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or neighborhood…"
+            placeholder="Search by name, city, or country…"
             aria-label="Search providers"
             className="w-full rounded-full border border-border bg-card py-3.5 pl-11 pr-4 text-sm shadow-soft outline-none transition-shadow focus:ring-2 focus:ring-ring/40"
           />
@@ -196,7 +264,7 @@ function BrowsePage() {
                 ))}
                 {filtered.length === 0 && (
                   <div className="col-span-full rounded-3xl border border-dashed border-border py-20 text-center text-muted-foreground">
-                    No providers match your filters. Try widening your search.
+                    No providers match your filters. Try widening your search or switching country.
                   </div>
                 )}
               </motion.div>
@@ -231,9 +299,11 @@ function BrowsePage() {
                       <div className="flex cursor-pointer items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-lift transition-transform hover:scale-110">
                         <MapPin className="h-3 w-3 text-gold" /> ${p.rate}
                       </div>
-                      <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-44 -translate-x-1/2 rounded-2xl bg-card p-3 opacity-0 shadow-lift transition-opacity group-hover:opacity-100">
+                      <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-48 -translate-x-1/2 rounded-2xl bg-card p-3 opacity-0 shadow-lift transition-opacity group-hover:opacity-100">
                         <p className="text-sm font-semibold">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.location}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.flag} {p.location}, {p.country}
+                        </p>
                       </div>
                     </div>
                   </div>

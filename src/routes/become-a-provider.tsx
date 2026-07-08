@@ -27,9 +27,11 @@ const perks = [
 const steps = [
   { n: "1", t: "Apply online", d: "Tell us about your experience — takes under 10 minutes." },
   { n: "2", t: "Verify your identity", d: "Government ID verification and background check (18+ required)." },
-  { n: "3", t: "Build your profile", d: "Photos, services, rates, and availability. We'll help polish it." },
-  { n: "4", t: "Start earning", d: "Go live, accept bookings, and get paid weekly." },
+  { n: "3", t: "Choose country & category", d: "Select the country where you work and your category — Woman or Trans Woman. Clients browse by both." },
+  { n: "4", t: "Build your profile", d: "Photos, services, rates, and availability. We'll help polish it." },
+  { n: "5", t: "Start earning", d: "Go live, accept bookings in your country, and get paid weekly." },
 ];
+
 
 function BecomeProvider() {
   return (
