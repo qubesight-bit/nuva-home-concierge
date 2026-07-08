@@ -83,14 +83,20 @@ function ProviderProfile() {
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+                  <span aria-hidden>{provider.flag}</span> {provider.country}
+                </span>
+                <span className="rounded-full bg-gold-soft px-3 py-1 text-xs font-semibold text-gold-foreground">
+                  {provider.gender === "trans-woman" ? "Trans Woman" : "Woman"}
+                </span>
                 {provider.badges.map((b: string) => (
-                  <span key={b} className="flex items-center gap-1 rounded-full bg-gold-soft px-3 py-1 text-xs font-semibold text-gold-foreground">
-                    <BadgeCheck className="h-3 w-3" /> {b}
+                  <span key={b} className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+                    <BadgeCheck className="h-3 w-3 text-gold" /> {b}
                   </span>
                 ))}
               </div>
               <h1 className="mt-4 text-3xl font-bold sm:text-4xl">{provider.name}</h1>
-              <p className="mt-1 text-muted-foreground">{provider.location}</p>
+              <p className="mt-1 text-muted-foreground">{provider.location}, {provider.country}</p>
               <div className="mt-4 flex flex-wrap items-center gap-5 text-sm">
                 <span className="flex items-center gap-1.5 font-semibold">
                   <Star className="h-4 w-4 fill-gold text-gold" /> {provider.rating.toFixed(2)}
@@ -103,6 +109,7 @@ function ProviderProfile() {
                   <Globe className="h-4 w-4" /> {provider.languages.join(", ")}
                 </span>
               </div>
+
               <p className="mt-5 leading-relaxed text-muted-foreground">{provider.bio}</p>
               <button className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-sm font-semibold shadow-soft transition-all hover:shadow-lift">
                 <MessageSquare className="h-4 w-4" /> Message {provider.name.split(" ")[0]}
