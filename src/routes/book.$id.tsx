@@ -52,7 +52,12 @@ function nextDays(n: number) {
 
 function BookingFlow() {
   const { provider } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const activeCategory = safeCategory(search.category);
+  const activeCountry = search.country ? getCountry(search.country) : undefined;
+  const hasFilter = !!activeCountry || activeCategory !== "all";
   const [step, setStep] = useState(0);
+
   const [service, setService] = useState<string>(SERVICES[0].id);
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
