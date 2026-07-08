@@ -1,9 +1,13 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Loader2, Star } from "lucide-react";
 import { getCountry, getProvider, SERVICES, EXTRAS } from "@/lib/providers";
 import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const Route = createFileRoute("/book/$id")({
   validateSearch: browseSearchValidator,
@@ -64,6 +68,38 @@ function BookingFlow() {
   const [duration, setDuration] = useState(3);
   const [extras, setExtras] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  async function confirmBooking() {
+    setError(null);
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    setSaving(true);
+    // Only persist bookings for real DB provider ids (UUIDs). Mock listings stay UI-only.
+    if (UUID_RE.test(provider.id)) {
+      const { error: insertError } = await supabase.from("bookings").insert({
+        client_user_id: user.id,
+        provider_id: provider.id,
+        service: selectedService.name,
+        booking_date: date,
+        booking_time: time,
+        duration_hours: duration,
+        extras,
+        total_cents: total * 100,
+      });
+      if (insertError) {
+        setSaving(false);
+        return setError(insertError.message);
+      }
+    }
+    setSaving(false);
+    setConfirmed(true);
+  }
 
   const days = useMemo(() => nextDays(10), []);
   const selectedService = SERVICES.find((s) => s.id === service)!;
@@ -303,12 +339,17 @@ function BookingFlow() {
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
-              <button
-                onClick={() => setConfirmed(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-gold px-8 py-3 text-sm font-semibold text-black shadow-gold transition-transform hover:scale-[1.02]"
-              >
-                <Lock className="h-4 w-4" /> Confirm & pay ${total}
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                {error && <p className="text-xs text-destructive">{error}</p>}
+                <button
+                  onClick={confirmBooking}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-gold px-8 py-3 text-sm font-semibold text-black shadow-gold transition-transform hover:scale-[1.02] disabled:opacity-60"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  {user ? `Confirm & pay $${total}` : `Sign in to confirm $${total}`}
+                </button>
+              </div>
             )}
           </div>
         </div>

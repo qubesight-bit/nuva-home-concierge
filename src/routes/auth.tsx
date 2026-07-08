@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
-import { useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Lock, ShieldCheck, Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { Reveal } from "@/components/site/Reveal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -15,20 +16,118 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-interface AuthValues {
-  email: string;
-  password: string;
-  name?: string;
-}
+const DOC_TYPES = [
+  { id: "passport", label: "Passport" },
+  { id: "drivers_license", label: "Driver's License" },
+  { id: "national_id", label: "National ID" },
+  { id: "residency_card", label: "Permanent Residency Card" },
+] as const;
 
 function AuthPage() {
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [submitted, setSubmitted] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<AuthValues>();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [signupComplete, setSignupComplete] = useState(false);
+
+  // form state
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [docType, setDocType] = useState<(typeof DOC_TYPES)[number]["id"]>("passport");
+  const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (!loading && user && !signupComplete) navigate({ to: "/dashboard" });
+  }, [loading, user, navigate, signupComplete]);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setSubmitting(false);
+    if (error) return setError(error.message);
+    navigate({ to: "/dashboard" });
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!file) return setError("Please upload a photo of your ID document.");
+    if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
+    setSubmitting(true);
+
+    const { data: signUp, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: name } },
+    });
+    if (signUpError || !signUp.user) {
+      setSubmitting(false);
+      return setError(signUpError?.message ?? "Sign up failed.");
+    }
+
+    // We need an active session to upload under the user's folder (RLS uses auth.uid()).
+    // With auto-confirm on, signUp returns a session; if not, sign in explicitly.
+    if (!signUp.session) {
+      const { error: siError } = await supabase.auth.signInWithPassword({ email, password });
+      if (siError) {
+        setSubmitting(false);
+        return setError("Account created but sign-in failed: " + siError.message);
+      }
+    }
+
+    const userId = signUp.user.id;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const path = `${userId}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("id-documents")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (uploadError) {
+      setSubmitting(false);
+      return setError("Account created, but document upload failed: " + uploadError.message);
+    }
+
+    const { error: verifError } = await supabase.from("id_verifications").insert({
+      user_id: userId,
+      document_type: docType,
+      document_path: path,
+    });
+    if (verifError) {
+      setSubmitting(false);
+      return setError("Uploaded, but couldn't record verification: " + verifError.message);
+    }
+
+    setSubmitting(false);
+    setSignupComplete(true);
+  }
+
+  if (signupComplete) {
+    return (
+      <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16 sm:px-6">
+        <Reveal>
+          <div className="rounded-4xl border border-border bg-card p-8 text-center shadow-lift sm:p-10">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-gold shadow-gold">
+              <CheckCircle2 className="h-8 w-8 text-black" />
+            </div>
+            <h1 className="mt-6 text-2xl font-bold">Account created</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Your ID document has been submitted for manual review. You'll receive an email
+              once an admin approves your account. This usually takes 24–48 hours.
+            </p>
+            <button
+              onClick={() => navigate({ to: "/dashboard" })}
+              className="mt-8 w-full rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-soft"
+            >
+              Go to dashboard
+            </button>
+          </div>
+        </Reveal>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16 sm:px-6">
@@ -38,7 +137,7 @@ function AuthPage() {
             {(["login", "register"] as const).map((m) => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setSubmitted(false); }}
+                onClick={() => { setMode(m); setError(null); }}
                 className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all ${
                   mode === m ? "bg-card shadow-soft" : "text-muted-foreground"
                 }`}
@@ -54,68 +153,90 @@ function AuthPage() {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
-              ? "Log in to manage bookings and messages."
-              : "Join Nuva as a client or professional. 18+ only — identity verification required."}
+              ? "Log in to manage bookings and your profile."
+              : "18+ only. Every account is manually reviewed after an ID upload."}
           </p>
 
-          {submitted ? (
-            <div className="mt-8 rounded-3xl bg-gold-soft p-6 text-center text-sm text-gold-foreground">
-              Accounts go live once secure login is connected — this is a preview of the experience.
+          <form
+            onSubmit={mode === "login" ? handleLogin : handleRegister}
+            className="mt-8 space-y-4"
+            noValidate
+          >
+            {mode === "register" && (
+              <div>
+                <label htmlFor="name" className="text-sm font-medium">Full name</label>
+                <input
+                  id="name" required value={name} onChange={(e) => setName(e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+                />
+              </div>
+            )}
+            <div>
+              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <input
+                id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit(() => setSubmitted(true))} className="mt-8 space-y-4" noValidate>
+            <div>
+              <label htmlFor="password" className="text-sm font-medium">Password</label>
+              <input
+                id="password" type="password" required minLength={8}
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+              />
               {mode === "register" && (
-                <div>
-                  <label htmlFor="name" className="text-sm font-medium">Full name</label>
-                  <input
-                    id="name"
-                    {...register("name", { required: mode === "register" ? "Please enter your name" : false })}
-                    className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
-                  />
-                  {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>}
-                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">At least 8 characters. We check against known breached passwords.</p>
               )}
-              <div>
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  {...register("email", {
-                    required: "Please enter your email",
-                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email address" },
-                  })}
-                  className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
-                />
-                {errors.email && <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>}
-              </div>
-              <div>
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium">Password</label>
-                  {mode === "login" && (
-                    <button type="button" className="text-xs text-muted-foreground underline underline-offset-2">
-                      Forgot password?
-                    </button>
-                  )}
+            </div>
+
+            {mode === "register" && (
+              <>
+                <div>
+                  <label htmlFor="docType" className="text-sm font-medium">Document type</label>
+                  <select
+                    id="docType" value={docType}
+                    onChange={(e) => setDocType(e.target.value as typeof docType)}
+                    className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+                  >
+                    {DOC_TYPES.map((d) => <option key={d.id} value={d.id}>{d.label}</option>)}
+                  </select>
                 </div>
-                <input
-                  id="password"
-                  type="password"
-                  {...register("password", {
-                    required: "Please enter a password",
-                    minLength: { value: 8, message: "At least 8 characters" },
-                  })}
-                  className="mt-2 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
-                />
-                {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
+                <div>
+                  <label className="text-sm font-medium">Upload ID (photo or scan)</label>
+                  <label className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-background px-4 py-6 text-center transition-colors hover:border-gold">
+                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">
+                      {file ? file.name : "Click to select a file"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">JPG, PNG, or PDF · under 10MB</span>
+                    <input
+                      type="file" accept="image/*,application/pdf" className="hidden"
+                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Your ID is encrypted, visible only to Nuva admins for age & identity verification, and never shared with clients or providers.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {error && (
+              <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error}
               </div>
-              <button
-                type="submit"
-                className="w-full rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:shadow-lift"
-              >
-                {mode === "login" ? "Log in" : "Create account"}
-              </button>
-            </form>
-          )}
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:shadow-lift disabled:opacity-60"
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {mode === "login" ? "Log in" : "Create account"}
+            </button>
+          </form>
 
           <div className="mt-8 flex items-center justify-center gap-4 border-t border-border pt-6 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5 text-gold" /> Encrypted</span>

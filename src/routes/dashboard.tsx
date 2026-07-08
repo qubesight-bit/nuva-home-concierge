@@ -1,69 +1,122 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import {
-  CalendarDays,
-  Heart,
-  MessageSquare,
-  CreditCard,
-  Settings,
-  Star,
-  BadgeCheck,
-  Receipt,
-  ArrowRight,
-} from "lucide-react";
-import { providers } from "@/lib/providers";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { COUNTRIES } from "@/lib/providers";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Your Dashboard | Nuva" },
-      { name: "description", content: "Manage your bookings, saved providers, messages, and payments." },
+      { name: "description", content: "Manage your bookings and provider profile." },
       { name: "robots", content: "noindex" },
     ],
   }),
   component: Dashboard,
 });
 
-const tabs = [
-  { id: "bookings", label: "Bookings", icon: CalendarDays },
-  { id: "saved", label: "Saved", icon: Heart },
-  { id: "messages", label: "Messages", icon: MessageSquare },
-  { id: "invoices", label: "Invoices", icon: Receipt },
-  { id: "payments", label: "Payments", icon: CreditCard },
-  { id: "settings", label: "Settings", icon: Settings },
-] as const;
+type Tab = "bookings" | "provider" | "account";
 
-type TabId = (typeof tabs)[number]["id"];
-
-const upcoming = [
-  { provider: providers[0], date: "Fri, Jul 11", time: "10:00", service: "Signature Clean", hours: 3, status: "Confirmed" },
-  { provider: providers[4], date: "Tue, Jul 15", time: "09:00", service: "Deep Clean", hours: 5, status: "Pending" },
-];
-const past = [
-  { provider: providers[1], date: "Jun 28", service: "Signature Clean", total: 156 },
-  { provider: providers[0], date: "Jun 14", service: "Eco Luxe Clean", total: 168 },
-  { provider: providers[3], date: "May 30", service: "Deep Clean", total: 248 },
-];
+interface Profile {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  verification_status: "pending" | "approved" | "rejected";
+  review_notes: string | null;
+}
+interface Booking {
+  id: string;
+  service: string;
+  booking_date: string;
+  booking_time: string;
+  duration_hours: number;
+  total_cents: number;
+  status: string;
+  created_at: string;
+}
+interface ProviderRow {
+  id: string;
+  name: string;
+  tagline: string | null;
+  bio: string | null;
+  location: string | null;
+  country_code: string;
+  country_name: string;
+  flag: string | null;
+  category: "woman" | "trans-woman";
+  rate_per_hour: number;
+  photo_path: string | null;
+  is_published: boolean;
+}
 
 function Dashboard() {
-  const [tab, setTab] = useState<TabId>("bookings");
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>("bookings");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [provider, setProvider] = useState<ProviderRow | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) navigate({ to: "/auth" });
+  }, [loading, user, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setDataLoading(true);
+      const [{ data: p }, { data: b }, { data: pr }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+        supabase.from("bookings").select("*").eq("client_user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("providers").select("*").eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      setProfile(p as Profile | null);
+      setBookings((b ?? []) as Booking[]);
+      setProvider(pr as ProviderRow | null);
+      setDataLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/" });
+  }
+
+  if (loading || !user) {
+    return <div className="mx-auto max-w-lg px-4 py-32 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-      <h1 className="text-3xl font-bold sm:text-4xl">Welcome back, Alex</h1>
-      <p className="mt-2 text-muted-foreground">Manage your bookings and account in one place.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold sm:text-4xl">Welcome{profile?.display_name ? `, ${profile.display_name}` : ""}</h1>
+          <p className="mt-2 text-muted-foreground">Manage your bookings, provider profile, and account.</p>
+        </div>
+        <button onClick={signOut} className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:shadow-soft">
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
+      </div>
+
+      {profile && <VerificationBanner status={profile.verification_status} notes={profile.review_notes} />}
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
-        {tabs.map((t) => (
+        {([
+          { id: "bookings", label: "Bookings", icon: CalendarDays },
+          { id: "provider", label: "Provider profile", icon: UserIcon },
+          { id: "account", label: "Account", icon: Settings },
+        ] as const).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition-all ${
-              tab === t.id
-                ? "bg-primary text-primary-foreground shadow-soft"
-                : "bg-secondary text-secondary-foreground hover:bg-accent"
+              tab === t.id ? "bg-primary text-primary-foreground shadow-soft" : "bg-secondary text-secondary-foreground hover:bg-accent"
             }`}
-            aria-pressed={tab === t.id}
           >
             <t.icon className="h-4 w-4" /> {t.label}
           </button>
@@ -71,148 +124,194 @@ function Dashboard() {
       </div>
 
       <div className="mt-10">
-        {tab === "bookings" && (
-          <div className="grid gap-10 lg:grid-cols-2">
-            <section>
-              <h2 className="text-lg font-bold">Upcoming</h2>
-              <div className="mt-4 space-y-4">
-                {upcoming.map((b) => (
-                  <div key={b.date} className="flex items-center gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft">
-                    <img src={b.provider.image} alt={b.provider.name} loading="lazy" width={768} height={960} className="h-16 w-16 rounded-2xl object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="flex items-center gap-1.5 truncate font-semibold">
-                        {b.provider.name} <BadgeCheck className="h-4 w-4 shrink-0 text-gold" />
-                      </p>
-                      <p className="text-sm text-muted-foreground">{b.service} · {b.hours}h</p>
-                      <p className="text-sm text-muted-foreground">{b.date} at {b.time}</p>
-                    </div>
-                    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                      b.status === "Confirmed" ? "bg-gold-soft text-gold-foreground" : "bg-secondary text-muted-foreground"
-                    }`}>
-                      {b.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-            <section>
-              <h2 className="text-lg font-bold">Past bookings</h2>
-              <div className="mt-4 space-y-3">
-                {past.map((b, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-2xl border border-border bg-card px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src={b.provider.image} alt={b.provider.name} loading="lazy" width={768} height={960} className="h-10 w-10 rounded-xl object-cover" />
-                      <div>
-                        <p className="text-sm font-semibold">{b.provider.name}</p>
-                        <p className="text-xs text-muted-foreground">{b.service} · {b.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold">${b.total}</span>
-                      <button className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-accent">
-                        <Star className="h-3 w-3" /> Rate
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-        )}
-
-        {tab === "saved" && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {providers.slice(0, 3).map((p) => (
-              <Link
-                key={p.id}
-                to="/providers/$id"
-                params={{ id: p.id }}
-                className="group flex items-center gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft transition-all hover:shadow-lift"
-              >
-                <img src={p.image} alt={p.name} loading="lazy" width={768} height={960} className="h-16 w-16 rounded-2xl object-cover" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{p.name}</p>
-                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Star className="h-3.5 w-3.5 fill-gold text-gold" /> {p.rating.toFixed(2)} · ${p.rate}/hr
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {tab === "messages" && (
-          <div className="space-y-3">
-            {[
-              { p: providers[0], msg: "Perfect, I'll bring the eco products you requested. See you Friday!", time: "2h ago", unread: true },
-              { p: providers[4], msg: "Thank you for the lovely review! Looking forward to next time.", time: "1d ago", unread: false },
-            ].map((m) => (
-              <button key={m.p.id} className="flex w-full items-center gap-4 rounded-3xl border border-border bg-card p-5 text-left shadow-soft transition-all hover:shadow-lift">
-                <img src={m.p.image} alt={m.p.name} loading="lazy" width={768} height={960} className="h-12 w-12 rounded-xl object-cover" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">{m.p.name}</p>
-                    <span className="text-xs text-muted-foreground">{m.time}</span>
-                  </div>
-                  <p className={`truncate text-sm ${m.unread ? "font-medium" : "text-muted-foreground"}`}>{m.msg}</p>
-                </div>
-                {m.unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-gold" aria-label="Unread" />}
-              </button>
-            ))}
-            <p className="pt-4 text-center text-xs text-muted-foreground">
-              All messages are encrypted end-to-end.
-            </p>
-          </div>
-        )}
-
-        {tab === "invoices" && (
-          <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
-            {past.map((b, i) => (
-              <div key={i} className={`flex items-center justify-between px-6 py-4 ${i > 0 ? "border-t border-border" : ""}`}>
-                <div>
-                  <p className="text-sm font-semibold">Invoice #{2040 + i}</p>
-                  <p className="text-xs text-muted-foreground">{b.service} — {b.provider.name} · {b.date}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold">${b.total}</span>
-                  <button className="rounded-full bg-secondary px-4 py-1.5 text-xs font-medium hover:bg-accent">Download PDF</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tab === "payments" && (
-          <div className="max-w-md space-y-4">
-            <div className="rounded-3xl bg-primary p-6 text-primary-foreground shadow-lift">
-              <div className="flex items-center justify-between">
-                <CreditCard className="h-6 w-6 text-gold" />
-                <span className="text-xs font-medium opacity-70">Default</span>
-              </div>
-              <p className="mt-8 font-mono text-lg tracking-widest">•••• •••• •••• 4242</p>
-              <div className="mt-4 flex justify-between text-xs opacity-70">
-                <span>Alex Morgan</span>
-                <span>09/28</span>
-              </div>
-            </div>
-            <button className="w-full rounded-full border border-dashed border-border py-3.5 text-sm font-medium text-muted-foreground transition-colors hover:border-gold hover:text-foreground">
-              + Add payment method
-            </button>
-          </div>
-        )}
-
-        {tab === "settings" && (
-          <div className="max-w-lg space-y-3">
-            {["Profile information", "Notifications", "Privacy & security", "Identity verification", "Support"].map((s) => (
-              <button key={s} className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-5 py-4 text-left text-sm font-medium transition-all hover:shadow-soft">
-                {s}
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
+        {dataLoading ? (
+          <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+        ) : tab === "bookings" ? (
+          <BookingsList bookings={bookings} />
+        ) : tab === "provider" ? (
+          <ProviderEditor
+            userId={user.id}
+            displayName={profile?.display_name ?? ""}
+            initial={provider}
+            approved={profile?.verification_status === "approved"}
+            onSaved={(row) => setProvider(row)}
+          />
+        ) : (
+          <AccountPanel profile={profile} email={user.email ?? ""} />
         )}
       </div>
     </div>
   );
+}
+
+function VerificationBanner({ status, notes }: { status: Profile["verification_status"]; notes: string | null }) {
+  const config = {
+    pending: { icon: Clock, cls: "bg-gold-soft text-gold-foreground", title: "Account pending review", body: "An admin is reviewing your ID document. You'll be notified within 24–48 hours." },
+    approved: { icon: CheckCircle2, cls: "bg-green-500/10 text-green-700 dark:text-green-400", title: "Verified", body: "Your ID has been approved. You can publish a provider profile and receive bookings." },
+    rejected: { icon: XCircle, cls: "bg-destructive/10 text-destructive", title: "Verification rejected", body: notes ?? "Please contact support to resubmit your documents." },
+  }[status];
+  const Icon = config.icon;
+  return (
+    <div className={`mt-6 flex items-start gap-3 rounded-3xl px-5 py-4 ${config.cls}`}>
+      <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+      <div>
+        <p className="font-semibold">{config.title}</p>
+        <p className="text-sm opacity-90">{config.body}</p>
+      </div>
+    </div>
+  );
+}
+
+function BookingsList({ bookings }: { bookings: Booking[] }) {
+  if (bookings.length === 0) {
+    return (
+      <div className="rounded-3xl border border-dashed border-border p-10 text-center">
+        <p className="text-muted-foreground">No bookings yet.</p>
+        <Link to="/browse" search={{ country: "", category: "all" }} className="mt-4 inline-block rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">
+          Browse providers
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      {bookings.map((b) => (
+        <div key={b.id} className="flex items-center justify-between rounded-3xl border border-border bg-card p-5 shadow-soft">
+          <div>
+            <p className="font-semibold">{b.service}</p>
+            <p className="text-sm text-muted-foreground">{b.booking_date} at {b.booking_time} · {b.duration_hours}h</p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold">${(b.total_cents / 100).toFixed(0)}</p>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">{b.status}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ProviderEditor({
+  userId, displayName, initial, approved, onSaved,
+}: { userId: string; displayName: string; initial: ProviderRow | null; approved: boolean; onSaved: (row: ProviderRow) => void }) {
+  const [name, setName] = useState(initial?.name ?? displayName);
+  const [tagline, setTagline] = useState(initial?.tagline ?? "");
+  const [bio, setBio] = useState(initial?.bio ?? "");
+  const [location, setLocation] = useState(initial?.location ?? "");
+  const [country, setCountry] = useState(initial?.country_code ?? "US");
+  const [category, setCategory] = useState<"woman" | "trans-woman">(initial?.category ?? "woman");
+  const [rate, setRate] = useState(initial?.rate_per_hour ?? 150);
+  const [published, setPublished] = useState(initial?.is_published ?? false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!initial?.photo_path) { setPhotoUrl(null); return; }
+    supabase.storage.from("provider-photos").createSignedUrl(initial.photo_path, 3600).then(({ data }) => {
+      setPhotoUrl(data?.signedUrl ?? null);
+    });
+  }, [initial?.photo_path]);
+
+  const selectedCountry = useMemo(() => COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0], [country]);
+
+  async function save() {
+    setMsg(null);
+    setSaving(true);
+    let photo_path = initial?.photo_path ?? null;
+    if (photoFile) {
+      const ext = photoFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("provider-photos").upload(path, photoFile, { contentType: photoFile.type, upsert: false });
+      if (error) { setSaving(false); return setMsg({ ok: false, text: "Photo upload failed: " + error.message }); }
+      photo_path = path;
+    }
+    const payload = {
+      user_id: userId,
+      name, tagline, bio, location,
+      country_code: selectedCountry.code,
+      country_name: selectedCountry.name,
+      flag: selectedCountry.flag,
+      category,
+      rate_per_hour: rate,
+      photo_path,
+      is_published: published && approved,
+    };
+    const { data, error } = await supabase.from("providers").upsert(payload, { onConflict: "user_id" }).select().single();
+    setSaving(false);
+    if (error) return setMsg({ ok: false, text: error.message });
+    setMsg({ ok: true, text: "Profile saved." });
+    onSaved(data as ProviderRow);
+  }
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
+      <div>
+        <div className="aspect-[4/5] overflow-hidden rounded-3xl border border-border bg-secondary">
+          {photoUrl ? (
+            <img src={photoUrl} alt="Profile" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No photo yet</div>
+          )}
+        </div>
+        <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-full border border-dashed border-border py-3 text-sm font-medium hover:border-gold">
+          <Upload className="h-4 w-4" /> {photoFile ? photoFile.name.slice(0, 24) : "Upload photo"}
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)} />
+        </label>
+      </div>
+      <div className="space-y-4">
+        <Field label="Display name"><input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} /></Field>
+        <Field label="Tagline"><input value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder="Short one-liner" className={inputCls} /></Field>
+        <Field label="Bio"><textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} className={inputCls} /></Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="City / neighborhood"><input value={location} onChange={(e) => setLocation(e.target.value)} className={inputCls} /></Field>
+          <Field label="Country">
+            <select value={country} onChange={(e) => setCountry(e.target.value)} className={inputCls}>
+              {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Category">
+            <select value={category} onChange={(e) => setCategory(e.target.value as "woman" | "trans-woman")} className={inputCls}>
+              <option value="woman">Woman</option>
+              <option value="trans-woman">Trans Woman</option>
+            </select>
+          </Field>
+          <Field label="Rate per hour (USD)"><input type="number" min={20} value={rate} onChange={(e) => setRate(Number(e.target.value))} className={inputCls} /></Field>
+        </div>
+        <label className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4">
+          <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} disabled={!approved} className="h-4 w-4" />
+          <span className="text-sm">
+            <span className="font-medium">Publish my profile</span>
+            <span className="ml-2 text-muted-foreground">{approved ? "— visible in browse results" : "— available once account is approved"}</span>
+          </span>
+        </label>
+        {msg && <div className={`rounded-2xl px-4 py-3 text-sm ${msg.ok ? "bg-green-500/10 text-green-700" : "bg-destructive/10 text-destructive"}`}>{msg.text}</div>}
+        <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save profile
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AccountPanel({ profile, email }: { profile: Profile | null; email: string }) {
+  return (
+    <div className="max-w-lg space-y-4 rounded-3xl border border-border bg-card p-6">
+      <Row label="Email" value={email} />
+      <Row label="Display name" value={profile?.display_name ?? "—"} />
+      <Row label="Verification status" value={profile?.verification_status ?? "—"} />
+      <p className="text-xs text-muted-foreground">To update your ID document, contact support.</p>
+    </div>
+  );
+}
+
+const inputCls = "w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="block"><span className="text-sm font-medium">{label}</span><div className="mt-2">{children}</div></label>;
+}
+function Row({ label, value }: { label: string; value: string }) {
+  return <div className="flex justify-between border-b border-border py-2 last:border-b-0"><span className="text-sm text-muted-foreground">{label}</span><span className="text-sm font-medium">{value}</span></div>;
 }
