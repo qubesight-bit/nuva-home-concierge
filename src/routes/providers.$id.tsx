@@ -236,10 +236,12 @@ function ProviderProfile() {
             <Link
               to="/book/$id"
               params={{ id: provider.id }}
+              search={{ country: search.country, category: search.category }}
               className="mt-7 block rounded-full bg-gradient-gold py-4 text-center text-base font-semibold text-black shadow-gold transition-transform hover:scale-[1.02]"
             >
               Book {provider.name.split(" ")[0]}
             </Link>
+
             <p className="mt-4 text-center text-xs text-muted-foreground">You won't be charged yet</p>
           </div>
         </aside>
