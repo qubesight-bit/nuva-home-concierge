@@ -1,9 +1,13 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Loader2, Star } from "lucide-react";
 import { getCountry, getProvider, SERVICES, EXTRAS } from "@/lib/providers";
 import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const Route = createFileRoute("/book/$id")({
   validateSearch: browseSearchValidator,
