@@ -33,15 +33,23 @@ type CategoryFilter = "all" | Gender;
 
 function BrowsePage() {
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = useNavigate();
 
   const country = search.country;
   const category: CategoryFilter = safeCategory(search.category);
 
   const setCountry = (code: string) =>
-    navigate({ search: (prev) => ({ ...prev, country: code }), replace: true });
+    navigate({
+      to: "/browse",
+      search: (prev: { country: string; category: string }) => ({ ...prev, country: code }),
+      replace: true,
+    });
   const setCategory = (id: CategoryFilter) =>
-    navigate({ search: (prev) => ({ ...prev, category: id }), replace: true });
+    navigate({
+      to: "/browse",
+      search: (prev: { country: string; category: string }) => ({ ...prev, category: id }),
+      replace: true,
+    });
 
   const [query, setQuery] = useState("");
   const [maxRate, setMaxRate] = useState(60);
@@ -57,10 +65,15 @@ function BrowsePage() {
     if (country) return;
     const detected = detectCountryCode();
     if (availableCountries.some((c) => c.code === detected)) {
-      navigate({ search: (prev) => ({ ...prev, country: detected }), replace: true });
+      navigate({
+        to: "/browse",
+        search: (prev: { country: string; category: string }) => ({ ...prev, country: detected }),
+        replace: true,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const filtered = useMemo(
     () =>
