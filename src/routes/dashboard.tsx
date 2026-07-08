@@ -452,8 +452,51 @@ function ProviderEditor({
         </button>
       </div>
     </div>
+    </>
   );
 }
+
+function PayoutStatusCard({ approved }: { approved: boolean }) {
+  if (approved) {
+    return (
+      <div
+        role="status"
+        data-testid="payout-status"
+        data-payout-enabled="true"
+        className="flex items-start gap-3 rounded-3xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-green-700 dark:text-green-400"
+      >
+        <Wallet className="mt-0.5 h-5 w-5 shrink-0" />
+        <div>
+          <p className="font-semibold">Payouts enabled</p>
+          <p className="text-sm opacity-90">
+            Your identity is verified. Stripe payouts will be released on your normal schedule
+            after each completed booking.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      role="alert"
+      data-testid="payout-status"
+      data-payout-enabled="false"
+      className="flex items-start gap-3 rounded-3xl border border-gold/40 bg-gold-soft px-5 py-4 text-gold-foreground"
+    >
+      <Wallet className="mt-0.5 h-5 w-5 shrink-0" />
+      <div>
+        <p className="font-semibold">Payouts on hold — ID verification pending</p>
+        <p className="mt-1 text-sm opacity-90">
+          Stripe payouts are disabled on your account until Nuva approves your government-issued
+          ID. Any bookings completed in the meantime will be held and released automatically once
+          your verification is approved. This is a legal requirement — not a manual step you can
+          skip.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 function AccountPanel({ profile, email }: { profile: Profile | null; email: string }) {
   return (
