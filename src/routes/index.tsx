@@ -24,12 +24,13 @@ import { Reveal, Counter } from "@/components/site/Reveal";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Nuva — Premium Housekeeping, Complete Discretion" },
+      { title: "Nuva — Premium Nude Housekeeping. Strictly Non-Sexual." },
       {
         name: "description",
         content:
-          "Book verified professional housekeepers through a secure platform designed around privacy, trust, and convenience.",
+          "Nuva is a professional nude housekeeping marketplace — verified housekeepers work in the nude as part of the service. Strictly non-sexual, zero-tolerance conduct policy, secure and private.",
       },
+
     ],
   }),
   component: Index,
@@ -84,16 +85,18 @@ function Index() {
             className="max-w-2xl"
           >
             <span className="inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white">
-              <Sparkles className="h-3.5 w-3.5 text-gold" /> Trusted by 12,000+ households
+              <Sparkles className="h-3.5 w-3.5 text-gold" /> Nude housekeeping · Strictly non-sexual
             </span>
             <h1 className="mt-6 text-balance text-4xl font-bold leading-[1.05] text-white sm:text-6xl lg:text-7xl">
-              Premium Housekeeping. Professional Service.{" "}
-              <span className="bg-gradient-gold bg-clip-text text-transparent">Complete Discretion.</span>
+              Premium Nude Housekeeping.{" "}
+              <span className="bg-gradient-gold bg-clip-text text-transparent">A Professional Service.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/85">
-              Book verified professional housekeepers through a secure platform designed around
-              privacy, trust, and convenience.
+              Nuva connects you with verified professional housekeepers who work in the nude as
+              part of the service. It is a cleaning service — strictly non-sexual, with a
+              zero-tolerance code of conduct enforced on every booking.
             </p>
+
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/browse"

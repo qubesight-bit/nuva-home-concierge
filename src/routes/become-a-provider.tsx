@@ -39,12 +39,17 @@ function BecomeProvider() {
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative mx-auto max-w-7xl px-4 py-28 sm:px-6 sm:py-36">
           <div className="max-w-2xl">
-            <h1 className="text-balance text-4xl font-bold text-white sm:text-6xl">
+            <span className="inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white">
+              Nude housekeeping · Strictly non-sexual
+            </span>
+            <h1 className="mt-6 text-balance text-4xl font-bold text-white sm:text-6xl">
               Turn your expertise into a <span className="bg-gradient-gold bg-clip-text text-transparent">premium career</span>
             </h1>
             <p className="mt-6 max-w-lg text-lg text-white/85">
-              Join hundreds of professionals earning on their own terms — with the safety,
-              tools, and clientele of a world-class platform.
+              Nuva is a professional nude housekeeping platform. You clean — in the nude, if you
+              choose to accept a booking — and that is the entire service. It is strictly
+              non-sexual: clients agree to a zero-tolerance code of conduct, and you can end any
+              appointment immediately with full payment protected.
             </p>
             <Link
               to="/auth"
@@ -53,6 +58,7 @@ function BecomeProvider() {
               Apply now <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
+
         </div>
       </section>
 

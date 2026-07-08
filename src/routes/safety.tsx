@@ -66,12 +66,18 @@ function Safety() {
       <section className="mx-auto max-w-3xl px-4 pb-24 text-center sm:px-6">
         <Reveal>
           <div className="rounded-4xl bg-secondary p-10">
-            <h2 className="text-2xl font-bold">A note on our standards</h2>
+            <h2 className="text-2xl font-bold">What Nuva is — and what it isn't</h2>
             <p className="mt-4 leading-relaxed text-muted-foreground">
-              Nuva is a professional housekeeping marketplace. We enforce a strict code of conduct:
-              any behavior that compromises the professionalism, dignity, or safety of our
-              community results in immediate, permanent removal. Discretion means privacy — never
-              compromise.
+              Nuva is a <strong>professional nude housekeeping</strong> marketplace. Housekeepers
+              perform ordinary cleaning tasks — dusting, vacuuming, kitchens, bathrooms, laundry —
+              while nude, as part of the service. That is where the service begins and ends.
+            </p>
+            <p className="mt-4 leading-relaxed text-muted-foreground">
+              Nuva is <strong>strictly non-sexual</strong>. There is no touching, no sexual
+              contact, no explicit content, and no escort or adult-entertainment services offered
+              on this platform. Any request for, or offer of, sexual services — from either side —
+              results in immediate permanent removal and, where appropriate, referral to
+              authorities. Discretion means privacy. It never means compromise.
             </p>
           </div>
         </Reveal>
@@ -79,3 +85,4 @@ function Safety() {
     </div>
   );
 }
+

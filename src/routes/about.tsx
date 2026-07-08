@@ -28,15 +28,17 @@ function About() {
         <Reveal>
           <p className="text-sm font-semibold uppercase tracking-widest text-gold-foreground">Our story</p>
           <h1 className="mt-3 text-balance text-4xl font-bold sm:text-6xl">
-            The standard homes deserve. The respect professionals earn.
+            Premium nude housekeeping. A professional cleaning service — nothing more.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            Nuva was founded on a simple belief: booking exceptional housekeeping should feel as
-            effortless and trustworthy as staying at a five-star hotel — and the professionals
-            delivering it deserve a platform built around their safety, earnings, and dignity.
+            Nuva is a marketplace for professional housekeepers who choose to work in the nude as
+            part of the service. It is a <strong>cleaning</strong> service — strictly non-sexual,
+            with a zero-tolerance code of conduct, verified identities on both sides, and safety
+            infrastructure on every booking. No touching. No sexual services. Ever.
           </p>
         </Reveal>
       </section>
+
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
         <Reveal>
