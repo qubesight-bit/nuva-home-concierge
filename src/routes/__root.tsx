@@ -79,19 +79,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Nuva — Premium Housekeeping, Complete Discretion" },
+      { title: "Nuva — Premium Nude Housekeeping. Strictly Non-Sexual." },
       {
         name: "description",
         content:
-          "Book verified professional housekeepers through a secure platform designed around privacy, trust, and convenience.",
+          "Nuva is a professional nude housekeeping marketplace. Verified housekeepers work in the nude as part of the service — strictly non-sexual, with a zero-tolerance code of conduct.",
       },
       { name: "author", content: "Nuva" },
-      { property: "og:title", content: "Nuva — Premium Housekeeping, Complete Discretion" },
+      { property: "og:title", content: "Nuva — Premium Nude Housekeeping. Strictly Non-Sexual." },
       {
         property: "og:description",
         content:
-          "Book verified professional housekeepers through a secure platform designed around privacy, trust, and convenience.",
+          "A professional cleaning marketplace where housekeepers work in the nude. Strictly non-sexual, verified, safe, and private.",
       },
+
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

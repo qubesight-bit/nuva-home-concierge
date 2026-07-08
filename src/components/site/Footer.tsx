@@ -37,9 +37,10 @@ export default function Footer() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Premium housekeeping, professional service, complete discretion. Verified
-              professionals, secure payments, and safety at every step.
+              Premium nude housekeeping — a professional cleaning service, strictly non-sexual.
+              Verified providers, secure payments, and safety at every step.
             </p>
+
           </div>
           {columns.map((col) => (
             <div key={col.title}>
