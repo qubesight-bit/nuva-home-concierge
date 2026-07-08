@@ -21,6 +21,7 @@ export function Logo() {
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
