@@ -247,7 +247,7 @@ function AuthPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (mode === "register" && !ageConfirmed)}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:shadow-lift disabled:opacity-60"
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
