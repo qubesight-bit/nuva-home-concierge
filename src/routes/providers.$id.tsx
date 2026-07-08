@@ -18,11 +18,13 @@ import ProviderCard from "@/components/site/ProviderCard";
 
 
 export const Route = createFileRoute("/providers/$id")({
+  validateSearch: browseSearchValidator,
   loader: ({ params }): { provider: Provider } => {
     const provider = getProvider(params.id);
     if (!provider) throw notFound();
     return { provider };
   },
+
   head: ({ loaderData }) => {
     if (!loaderData) {
       return { meta: [{ title: "Provider not found | Nuva" }, { name: "robots", content: "noindex" }] };
