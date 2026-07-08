@@ -165,7 +165,7 @@ function Dashboard() {
             displayName={profile?.display_name ?? ""}
             initial={provider}
             approved={approved}
-            verificationStatus={profile?.verification_status ?? "pending"}
+
             onSaved={(row) => setProvider(row)}
           />
         ) : (
