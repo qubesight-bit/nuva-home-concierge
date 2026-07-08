@@ -236,7 +236,10 @@ function AuthPage() {
                   <input
                     type="checkbox"
                     checked={ageConfirmed}
-                    onChange={(e) => setAgeConfirmed(e.target.checked)}
+                    onChange={(e) => {
+                      setAgeConfirmed(e.target.checked);
+                      if (e.target.checked) setAgeError(null);
+                    }}
                     className="mt-0.5 h-4 w-4 shrink-0 accent-gold"
                   />
                   <span className="text-xs text-muted-foreground">
@@ -247,6 +250,11 @@ function AuthPage() {
                     </Link>.
                   </span>
                 </label>
+                {ageError && (
+                  <p className="text-xs text-destructive" role="alert">
+                    {ageError}
+                  </p>
+                )}
               </>
             )}
 
