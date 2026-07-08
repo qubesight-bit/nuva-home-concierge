@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Globe2, LayoutGrid, Map, MapPin, Search, SlidersHorizontal, Star, Users, X, Zap } from "lucide-react";
 import { COUNTRIES, GENDERS, detectCountryCode, providers, type Gender } from "@/lib/providers";
+import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
 import ProviderCard from "@/components/site/ProviderCard";
 
 export const Route = createFileRoute("/browse")({
+  validateSearch: browseSearchValidator,
   head: () => ({
     meta: [
       { title: "Browse Verified Housekeepers by Country | Nuva" },
@@ -30,9 +32,26 @@ const availableCountries = COUNTRIES.filter((c) =>
 type CategoryFilter = "all" | Gender;
 
 function BrowsePage() {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+
+  const country = search.country;
+  const category: CategoryFilter = safeCategory(search.category);
+
+  const setCountry = (code: string) =>
+    navigate({
+      to: "/browse",
+      search: (prev: { country: string; category: string }) => ({ ...prev, country: code }),
+      replace: true,
+    });
+  const setCategory = (id: CategoryFilter) =>
+    navigate({
+      to: "/browse",
+      search: (prev: { country: string; category: string }) => ({ ...prev, category: id }),
+      replace: true,
+    });
+
   const [query, setQuery] = useState("");
-  const [country, setCountry] = useState<string>(""); // "" = all countries
-  const [category, setCategory] = useState<CategoryFilter>("all");
   const [maxRate, setMaxRate] = useState(60);
   const [language, setLanguage] = useState<string>("");
   const [minRating, setMinRating] = useState(0);
@@ -40,13 +59,21 @@ function BrowsePage() {
   const [view, setView] = useState<"list" | "map">("list");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Auto-select the viewer's country on first client render, if we have providers there.
+  // Auto-select the viewer's country on first client render, when no country
+  // is already in the URL and we have providers there.
   useEffect(() => {
+    if (country) return;
     const detected = detectCountryCode();
     if (availableCountries.some((c) => c.code === detected)) {
-      setCountry(detected);
+      navigate({
+        to: "/browse",
+        search: (prev: { country: string; category: string }) => ({ ...prev, country: detected }),
+        replace: true,
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   const filtered = useMemo(
     () =>
@@ -64,6 +91,7 @@ function BrowsePage() {
       ),
     [query, country, category, maxRate, language, minRating, instantOnly],
   );
+
 
   const activeCountry = availableCountries.find((c) => c.code === country);
 

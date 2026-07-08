@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import {
+  ArrowLeft,
   BadgeCheck,
   CalendarDays,
   Globe,
@@ -10,16 +11,20 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
-import { getProvider, providers, type Provider } from "@/lib/providers";
+import { getProvider, providers, getCountry, type Provider } from "@/lib/providers";
+import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
 import { Reveal } from "@/components/site/Reveal";
 import ProviderCard from "@/components/site/ProviderCard";
 
+
 export const Route = createFileRoute("/providers/$id")({
+  validateSearch: browseSearchValidator,
   loader: ({ params }): { provider: Provider } => {
     const provider = getProvider(params.id);
     if (!provider) throw notFound();
     return { provider };
   },
+
   head: ({ loaderData }) => {
     if (!loaderData) {
       return { meta: [{ title: "Provider not found | Nuva" }, { name: "robots", content: "noindex" }] };
@@ -64,10 +69,38 @@ const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function ProviderProfile() {
   const { provider } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const activeCategory = safeCategory(search.category);
+  const activeCountry = search.country ? getCountry(search.country) : undefined;
+  const hasFilter = !!activeCountry || activeCategory !== "all";
   const others = providers.filter((p) => p.id !== provider.id).slice(0, 3);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+      {hasFilter && (
+        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm shadow-soft">
+          <Link
+            to="/browse"
+            search={{ country: search.country, category: search.category }}
+            className="inline-flex items-center gap-1.5 font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to results
+          </Link>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">Filtered by</span>
+          {activeCountry && (
+            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+              {activeCountry.flag} {activeCountry.name}
+            </span>
+          )}
+          {activeCategory !== "all" && (
+            <span className="rounded-full bg-gold-soft px-3 py-1 text-xs font-semibold text-gold-foreground">
+              {activeCategory === "trans-woman" ? "Trans Woman" : "Woman"}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
         <div>
           {/* Header */}
@@ -203,10 +236,12 @@ function ProviderProfile() {
             <Link
               to="/book/$id"
               params={{ id: provider.id }}
+              search={{ country: search.country, category: search.category }}
               className="mt-7 block rounded-full bg-gradient-gold py-4 text-center text-base font-semibold text-black shadow-gold transition-transform hover:scale-[1.02]"
             >
               Book {provider.name.split(" ")[0]}
             </Link>
+
             <p className="mt-4 text-center text-xs text-muted-foreground">You won't be charged yet</p>
           </div>
         </aside>

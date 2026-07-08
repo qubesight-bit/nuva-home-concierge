@@ -2,9 +2,11 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Star } from "lucide-react";
-import { getProvider, SERVICES, EXTRAS, type Provider } from "@/lib/providers";
+import { getCountry, getProvider, SERVICES, EXTRAS } from "@/lib/providers";
+import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
 
 export const Route = createFileRoute("/book/$id")({
+  validateSearch: browseSearchValidator,
   loader: ({ params }) => {
     const provider = getProvider(params.id);
     if (!provider) throw notFound();
@@ -36,6 +38,7 @@ export const Route = createFileRoute("/book/$id")({
   component: BookingFlow,
 });
 
+
 const stepLabels = ["Service", "Date & time", "Extras", "Review"];
 const times = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
 
@@ -49,7 +52,12 @@ function nextDays(n: number) {
 
 function BookingFlow() {
   const { provider } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const activeCategory = safeCategory(search.category);
+  const activeCountry = search.country ? getCountry(search.country) : undefined;
+  const hasFilter = !!activeCountry || activeCategory !== "all";
   const [step, setStep] = useState(0);
+
   const [service, setService] = useState<string>(SERVICES[0].id);
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
@@ -91,9 +99,14 @@ function BookingFlow() {
           <Link to="/dashboard" className="rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground">
             View in dashboard
           </Link>
-          <Link to="/browse" className="rounded-full border border-border bg-card px-7 py-3.5 text-sm font-semibold">
+          <Link
+            to="/browse"
+            search={{ country: search.country, category: search.category }}
+            className="rounded-full border border-border bg-card px-7 py-3.5 text-sm font-semibold"
+          >
             Browse more
           </Link>
+
         </div>
       </div>
     );
@@ -104,10 +117,28 @@ function BookingFlow() {
       <Link
         to="/providers/$id"
         params={{ id: provider.id }}
+        search={{ country: search.country, category: search.category }}
         className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" /> Back to profile
       </Link>
+
+      {hasFilter && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Booking from your filtered results:</span>
+          {activeCountry && (
+            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+              {activeCountry.flag} {activeCountry.name}
+            </span>
+          )}
+          {activeCategory !== "all" && (
+            <span className="rounded-full bg-gold-soft px-3 py-1 text-xs font-semibold text-gold-foreground">
+              {activeCategory === "trans-woman" ? "Trans Woman" : "Woman"}
+            </span>
+          )}
+        </div>
+      )}
+
 
       {/* Progress */}
       <div className="mt-8 flex items-center gap-2">
