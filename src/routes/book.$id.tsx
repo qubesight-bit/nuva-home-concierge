@@ -339,12 +339,17 @@ function BookingFlow() {
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
-              <button
-                onClick={() => setConfirmed(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-gold px-8 py-3 text-sm font-semibold text-black shadow-gold transition-transform hover:scale-[1.02]"
-              >
-                <Lock className="h-4 w-4" /> Confirm & pay ${total}
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                {error && <p className="text-xs text-destructive">{error}</p>}
+                <button
+                  onClick={confirmBooking}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-gold px-8 py-3 text-sm font-semibold text-black shadow-gold transition-transform hover:scale-[1.02] disabled:opacity-60"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  {user ? `Confirm & pay $${total}` : `Sign in to confirm $${total}`}
+                </button>
+              </div>
             )}
           </div>
         </div>
