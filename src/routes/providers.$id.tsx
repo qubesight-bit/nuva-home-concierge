@@ -83,7 +83,7 @@ function ProviderProfile() {
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                {provider.badges.map((b) => (
+                {provider.badges.map((b: string) => (
                   <span key={b} className="flex items-center gap-1 rounded-full bg-gold-soft px-3 py-1 text-xs font-semibold text-gold-foreground">
                     <BadgeCheck className="h-3 w-3" /> {b}
                   </span>
@@ -114,7 +114,7 @@ function ProviderProfile() {
           <Reveal className="mt-14">
             <h2 className="text-xl font-bold">Services offered</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {provider.services.map((s) => (
+              {provider.services.map((s: string) => (
                 <div key={s} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-soft">
                     <Sparkles className="h-4 w-4 text-gold-foreground" />
