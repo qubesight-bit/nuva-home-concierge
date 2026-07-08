@@ -402,7 +402,10 @@ function ProviderEditor({
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
+    <>
+    <PayoutStatusCard approved={approved} />
+    <div className="mt-6 grid gap-8 lg:grid-cols-[280px_1fr]">
+
       <div>
         <div className="aspect-[4/5] overflow-hidden rounded-3xl border border-border bg-secondary">
           {photoUrl ? (
