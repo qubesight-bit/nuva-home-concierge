@@ -41,14 +41,24 @@ export default function Header() {
             ))}
           </nav>
           <div className="hidden items-center gap-3 md:flex">
-            <Link
-              to="/auth"
-              className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Log in
-            </Link>
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:shadow-soft"
+              >
+                <LayoutDashboard className="h-4 w-4" /> Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/auth"
+                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Log in
+              </Link>
+            )}
             <Link
               to="/browse"
+              search={{ country: "", category: "all" }}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all duration-300 hover:shadow-lift hover:opacity-90"
             >
               Book Now
