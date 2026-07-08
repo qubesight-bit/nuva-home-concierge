@@ -195,6 +195,128 @@ function VerificationBanner({ status, notes }: { status: Profile["verification_s
   );
 }
 
+function IncomingBookings({
+  bookings,
+  approved,
+  onChanged,
+}: {
+  bookings: Booking[];
+  approved: boolean;
+  onChanged: () => void | Promise<void>;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const pending = bookings.filter((b) => b.status === "pending");
+
+  async function updateStatus(id: string, status: "confirmed" | "cancelled") {
+    if (!approved) {
+      setErr("Your ID must be approved before you can accept bookings.");
+      return;
+    }
+    setErr(null);
+    setBusyId(id);
+    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
+    setBusyId(null);
+    if (error) {
+      setErr(error.message);
+      return;
+    }
+    await onChanged();
+  }
+
+  return (
+    <section aria-labelledby="incoming-heading">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 id="incoming-heading" className="text-lg font-semibold">Incoming bookings</h2>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+            approved
+              ? "bg-green-500/10 text-green-700 dark:text-green-400"
+              : "bg-gold-soft text-gold-foreground"
+          }`}
+          data-testid="provider-verification-status"
+        >
+          {approved ? (
+            <><CheckCircle2 className="h-3.5 w-3.5" /> ID verified</>
+          ) : (
+            <><Clock className="h-3.5 w-3.5" /> ID pending — cannot accept bookings</>
+          )}
+        </span>
+      </div>
+
+      {!approved && (
+        <div
+          role="alert"
+          className="mb-4 rounded-3xl border border-gold/40 bg-gold-soft px-5 py-4 text-sm text-gold-foreground"
+        >
+          <p className="font-semibold">Booking acceptance is disabled</p>
+          <p className="mt-1 opacity-90">
+            You cannot accept or decline bookings until an admin approves your identity
+            document. Your clients will see incoming bookings as pending in the meantime.
+          </p>
+        </div>
+      )}
+
+      {bookings.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          No incoming bookings yet.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {bookings.map((b) => (
+            <div
+              key={b.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft"
+            >
+              <div>
+                <p className="font-semibold">{b.service}</p>
+                <p className="text-sm text-muted-foreground">
+                  {b.booking_date} at {b.booking_time} · {b.duration_hours}h
+                </p>
+                <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
+                  status: {b.status}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="mr-2 font-bold">${(b.total_cents / 100).toFixed(0)}</p>
+                {b.status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => updateStatus(b.id, "confirmed")}
+                      disabled={!approved || busyId === b.id}
+                      title={approved ? "Accept booking" : "ID must be approved before you can accept bookings"}
+                      className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-soft disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {busyId === b.id ? "…" : "Accept"}
+                    </button>
+                    <button
+                      onClick={() => updateStatus(b.id, "cancelled")}
+                      disabled={!approved || busyId === b.id}
+                      title={approved ? "Decline booking" : "ID must be approved before you can decline bookings"}
+                      className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {err && (
+        <p role="alert" className="mt-3 text-sm text-destructive">{err}</p>
+      )}
+      {pending.length > 0 && !approved && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {pending.length} pending request{pending.length === 1 ? "" : "s"} waiting on your verification.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function BookingsList({ bookings }: { bookings: Booking[] }) {
   if (bookings.length === 0) {
     return (
