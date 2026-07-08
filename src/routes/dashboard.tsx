@@ -56,6 +56,7 @@ function Dashboard() {
   const [tab, setTab] = useState<Tab>("bookings");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [incoming, setIncoming] = useState<Booking[]>([]);
   const [provider, setProvider] = useState<ProviderRow | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -63,24 +64,42 @@ function Dashboard() {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
 
-  useEffect(() => {
+  const approved = profile?.verification_status === "approved";
+
+  const loadData = async () => {
     if (!user) return;
+    setDataLoading(true);
+    const [{ data: p }, { data: b }, { data: pr }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      supabase.from("bookings").select("*").eq("client_user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("providers").select("*").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setProfile(p as Profile | null);
+    setBookings((b ?? []) as Booking[]);
+    setProvider(pr as ProviderRow | null);
+    if (pr?.id) {
+      const { data: inc } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("provider_id", pr.id)
+        .order("created_at", { ascending: false });
+      setIncoming((inc ?? []) as Booking[]);
+    } else {
+      setIncoming([]);
+    }
+    setDataLoading(false);
+  };
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
-      setDataLoading(true);
-      const [{ data: p }, { data: b }, { data: pr }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("bookings").select("*").eq("client_user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("providers").select("*").eq("user_id", user.id).maybeSingle(),
-      ]);
+      await loadData();
       if (cancelled) return;
-      setProfile(p as Profile | null);
-      setBookings((b ?? []) as Booking[]);
-      setProvider(pr as ProviderRow | null);
-      setDataLoading(false);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
 
   async function signOut() {
     await supabase.auth.signOut();
