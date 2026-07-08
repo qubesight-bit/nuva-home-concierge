@@ -1,14 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Menu, X, LayoutDashboard } from "lucide-react";
+import { Menu, X, LayoutDashboard, Globe, Home } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-
-const nav = [
-  { to: "/browse", label: "Browse Providers" },
-  { to: "/pricing", label: "Pricing" },
-  { to: "/safety", label: "Safety" },
-  { to: "/faq", label: "FAQ" },
-];
+import { LANGS, useI18n, type Lang } from "@/lib/i18n";
 
 export function Logo() {
   return (
@@ -19,9 +13,38 @@ export function Logo() {
   );
 }
 
+function LangSwitcher({ compact = false }: { compact?: boolean }) {
+  const { lang, setLang, t } = useI18n();
+  return (
+    <label className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm ${compact ? "" : "font-medium"}`}>
+      <Globe className="h-4 w-4 text-muted-foreground" aria-hidden />
+      <span className="sr-only">{t("language")}</span>
+      <select
+        value={lang}
+        onChange={(e) => setLang(e.target.value as Lang)}
+        className="bg-transparent pr-1 text-sm outline-none"
+        aria-label={t("language")}
+      >
+        {(Object.keys(LANGS) as Lang[]).map((code) => (
+          <option key={code} value={code}>{LANGS[code]}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const { t } = useI18n();
+
+  const nav = [
+    { to: "/", label: t("home"), icon: Home },
+    { to: "/browse", label: t("browse") },
+    { to: "/pricing", label: t("pricing") },
+    { to: "/safety", label: t("safety") },
+    { to: "/faq", label: t("faq") },
+  ] as const;
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
@@ -33,27 +56,30 @@ export default function Header() {
               <Link
                 key={item.to}
                 to={item.to}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                activeProps={{ className: "text-sm font-medium text-foreground" }}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                activeProps={{ className: "inline-flex items-center gap-1.5 text-sm font-medium text-foreground" }}
+                activeOptions={{ exact: item.to === "/" }}
               >
+                {"icon" in item && item.icon ? <item.icon className="h-4 w-4" aria-hidden /> : null}
                 {item.label}
               </Link>
             ))}
           </nav>
           <div className="hidden items-center gap-3 md:flex">
+            <LangSwitcher />
             {user ? (
               <Link
                 to="/dashboard"
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:shadow-soft"
               >
-                <LayoutDashboard className="h-4 w-4" /> Dashboard
+                <LayoutDashboard className="h-4 w-4" /> {t("dashboard")}
               </Link>
             ) : (
               <Link
                 to="/auth"
                 className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Log in
+                {t("login")}
               </Link>
             )}
             <Link
@@ -61,7 +87,7 @@ export default function Header() {
               search={{ country: "", category: "all" }}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all duration-300 hover:shadow-lift hover:opacity-90"
             >
-              Book Now
+              {t("book")}
             </Link>
           </div>
           <button
@@ -81,8 +107,9 @@ export default function Header() {
                   key={item.to}
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-3 py-3 text-base font-medium text-foreground hover:bg-secondary"
+                  className="inline-flex items-center gap-2 rounded-xl px-3 py-3 text-base font-medium text-foreground hover:bg-secondary"
                 >
+                  {"icon" in item && item.icon ? <item.icon className="h-4 w-4" aria-hidden /> : null}
                   {item.label}
                 </Link>
               ))}
@@ -91,14 +118,17 @@ export default function Header() {
                 onClick={() => setOpen(false)}
                 className="rounded-xl px-3 py-3 text-base font-medium text-foreground hover:bg-secondary"
               >
-                Log in
+                {t("login")}
               </Link>
+              <div className="px-1 py-2">
+                <LangSwitcher compact />
+              </div>
               <Link
                 to="/browse"
                 onClick={() => setOpen(false)}
                 className="mt-2 rounded-full bg-primary px-5 py-3 text-center text-base font-semibold text-primary-foreground"
               >
-                Book Now
+                {t("book")}
               </Link>
             </nav>
           </div>
