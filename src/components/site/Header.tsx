@@ -7,23 +7,23 @@ import { LANGS, useI18n, type Lang } from "@/lib/i18n";
 export function Logo() {
   return (
     <Link to="/" className="flex items-center gap-1.5 text-xl font-bold tracking-tight">
-      Nuva
+      <span className="notranslate" translate="no">Nuva</span>
       <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-gradient-gold" aria-hidden />
     </Link>
   );
 }
 
 function LangSwitcher({ compact = false }: { compact?: boolean }) {
-  const { lang, setLang, t } = useI18n();
+  const { lang, setLang } = useI18n();
   return (
-    <label className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm ${compact ? "" : "font-medium"}`}>
+    <label className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm notranslate ${compact ? "" : "font-medium"}`} translate="no">
       <Globe className="h-4 w-4 text-muted-foreground" aria-hidden />
-      <span className="sr-only">{t("language")}</span>
+      <span className="sr-only">Language</span>
       <select
         value={lang}
         onChange={(e) => setLang(e.target.value as Lang)}
         className="bg-transparent pr-1 text-sm outline-none"
-        aria-label={t("language")}
+        aria-label="Language"
       >
         {(Object.keys(LANGS) as Lang[]).map((code) => (
           <option key={code} value={code}>{LANGS[code]}</option>
@@ -33,18 +33,17 @@ function LangSwitcher({ compact = false }: { compact?: boolean }) {
   );
 }
 
+const nav = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "/browse", label: "Browse Providers" },
+  { to: "/pricing", label: "Pricing" },
+  { to: "/safety", label: "Safety" },
+  { to: "/faq", label: "FAQ" },
+] as const;
+
 export default function Header() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  const { t } = useI18n();
-
-  const nav = [
-    { to: "/", label: t("home"), icon: Home },
-    { to: "/browse", label: t("browse") },
-    { to: "/pricing", label: t("pricing") },
-    { to: "/safety", label: t("safety") },
-    { to: "/faq", label: t("faq") },
-  ] as const;
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
@@ -72,14 +71,14 @@ export default function Header() {
                 to="/dashboard"
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium hover:shadow-soft"
               >
-                <LayoutDashboard className="h-4 w-4" /> {t("dashboard")}
+                <LayoutDashboard className="h-4 w-4" /> Dashboard
               </Link>
             ) : (
               <Link
                 to="/auth"
                 className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t("login")}
+                Log in
               </Link>
             )}
             <Link
@@ -87,7 +86,7 @@ export default function Header() {
               search={{ country: "", category: "all" }}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all duration-300 hover:shadow-lift hover:opacity-90"
             >
-              {t("book")}
+              Book Now
             </Link>
           </div>
           <button
@@ -118,7 +117,7 @@ export default function Header() {
                 onClick={() => setOpen(false)}
                 className="rounded-xl px-3 py-3 text-base font-medium text-foreground hover:bg-secondary"
               >
-                {t("login")}
+                Log in
               </Link>
               <div className="px-1 py-2">
                 <LangSwitcher compact />
@@ -128,7 +127,7 @@ export default function Header() {
                 onClick={() => setOpen(false)}
                 className="mt-2 rounded-full bg-primary px-5 py-3 text-center text-base font-semibold text-primary-foreground"
               >
-                {t("book")}
+                Book Now
               </Link>
             </nav>
           </div>

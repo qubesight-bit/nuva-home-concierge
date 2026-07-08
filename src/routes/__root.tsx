@@ -122,8 +122,15 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <style>{`
+          .goog-te-banner-frame.skiptranslate, .goog-te-gadget { display: none !important; }
+          body { top: 0 !important; }
+          #google_translate_element { position: absolute; left: -9999px; top: -9999px; }
+          font, font font { background: transparent !important; box-shadow: none !important; }
+        `}</style>
       </head>
       <body>
+        <div id="google_translate_element" aria-hidden="true" />
         {children}
         <Scripts />
       </body>
