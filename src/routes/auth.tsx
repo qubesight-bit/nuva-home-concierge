@@ -59,7 +59,11 @@ function AuthPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!ageConfirmed) return setError("You must confirm you are at least 18 years old.");
+    setAgeError(null);
+    if (!ageConfirmed) {
+      setAgeError("You must confirm you are at least 18 years old to create an account.");
+      return;
+    }
     if (!file) return setError("Please upload a photo of your ID document.");
     if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
@@ -72,7 +76,13 @@ function AuthPage() {
       userId = result.userId;
     } catch (err) {
       setSubmitting(false);
-      return setError(err instanceof Error ? err.message : "Sign up failed.");
+      const message = err instanceof Error ? err.message : "Sign up failed.";
+      if (/age/i.test(message) || /18/i.test(message)) {
+        setAgeError("You must confirm you are at least 18 years old to create an account.");
+      } else {
+        setError(message);
+      }
+      return;
     }
 
     // Sign the new user in so RLS-scoped uploads work under their folder.
