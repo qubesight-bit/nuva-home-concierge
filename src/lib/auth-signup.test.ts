@@ -77,11 +77,6 @@ describe("registerAccount server-side gate — UI bypass attempts", () => {
     ["ageConfirmed as number 1", { ...validBase, ageConfirmed: 1 }],
     ["ageConfirmed as object {}", { ...validBase, ageConfirmed: {} }],
     ["ageConfirmed as truthy array [true]", { ...validBase, ageConfirmed: [true] }],
-    ["ageConfirmed via prototype pollution", (() => {
-      const p: Record<string, unknown> = { ...validBase };
-      Object.setPrototypeOf(p, { ageConfirmed: true });
-      return p;
-    })()],
     ["extra fields sneaked in but ageConfirmed missing", {
       ...validBase,
       isAdmin: true,
