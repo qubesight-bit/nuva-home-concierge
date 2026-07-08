@@ -48,6 +48,7 @@ function AuthPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setAgeError(null);
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
