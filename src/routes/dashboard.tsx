@@ -209,20 +209,19 @@ function IncomingBookings({
   const pending = bookings.filter((b) => b.status === "pending");
 
   async function updateStatus(id: string, status: "confirmed" | "cancelled") {
-    if (!approved) {
-      setErr("Your ID must be approved before you can accept bookings.");
-      return;
-    }
     setErr(null);
     setBusyId(id);
-    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
-    setBusyId(null);
-    if (error) {
-      setErr(error.message);
-      return;
+    try {
+      await updateBookingStatus({ data: { bookingId: id, status } });
+      await onChanged();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not update booking.";
+      setErr(msg);
+    } finally {
+      setBusyId(null);
     }
-    await onChanged();
   }
+
 
   return (
     <section aria-labelledby="incoming-heading">
