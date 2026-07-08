@@ -221,6 +221,21 @@ function AuthPage() {
                     Your ID is encrypted, visible only to Nuva admins for age & identity verification, and never shared with clients or providers.
                   </p>
                 </div>
+                <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-input bg-background px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={ageConfirmed}
+                    onChange={(e) => setAgeConfirmed(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-gold"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    I confirm that I am at least 18 years old. Providing false age
+                    information may result in immediate account termination. See our{" "}
+                    <Link to="/age-verification" className="underline underline-offset-2">
+                      Age Verification Policy
+                    </Link>.
+                  </span>
+                </label>
               </>
             )}
 
