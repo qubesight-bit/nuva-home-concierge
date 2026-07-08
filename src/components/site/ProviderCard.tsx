@@ -8,7 +8,16 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
 
   return (
     <div className="group relative overflow-hidden rounded-3xl bg-card shadow-soft transition-all duration-500 hover:-translate-y-1 hover:shadow-lift">
-      <Link to="/providers/$id" params={{ id: provider.id }} className="block">
+      <Link
+        to="/providers/$id"
+        params={{ id: provider.id }}
+        search={(prev: Record<string, unknown>) => ({
+          country: typeof prev.country === "string" ? prev.country : "",
+          category: typeof prev.category === "string" ? prev.category : "all",
+        })}
+        className="block"
+      >
+
         <div className="relative aspect-[4/5] overflow-hidden">
           <img
             src={provider.image}
