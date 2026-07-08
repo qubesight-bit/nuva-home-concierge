@@ -56,6 +56,7 @@ function Dashboard() {
   const [tab, setTab] = useState<Tab>("bookings");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [incoming, setIncoming] = useState<Booking[]>([]);
   const [provider, setProvider] = useState<ProviderRow | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -63,24 +64,42 @@ function Dashboard() {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
 
-  useEffect(() => {
+  const approved = profile?.verification_status === "approved";
+
+  const loadData = async () => {
     if (!user) return;
+    setDataLoading(true);
+    const [{ data: p }, { data: b }, { data: pr }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      supabase.from("bookings").select("*").eq("client_user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("providers").select("*").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setProfile(p as Profile | null);
+    setBookings((b ?? []) as Booking[]);
+    setProvider(pr as ProviderRow | null);
+    if (pr?.id) {
+      const { data: inc } = await supabase
+        .from("bookings")
+        .select("*")
+        .eq("provider_id", pr.id)
+        .order("created_at", { ascending: false });
+      setIncoming((inc ?? []) as Booking[]);
+    } else {
+      setIncoming([]);
+    }
+    setDataLoading(false);
+  };
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
-      setDataLoading(true);
-      const [{ data: p }, { data: b }, { data: pr }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("bookings").select("*").eq("client_user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("providers").select("*").eq("user_id", user.id).maybeSingle(),
-      ]);
+      await loadData();
       if (cancelled) return;
-      setProfile(p as Profile | null);
-      setBookings((b ?? []) as Booking[]);
-      setProvider(pr as ProviderRow | null);
-      setDataLoading(false);
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -127,17 +146,31 @@ function Dashboard() {
         {dataLoading ? (
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
         ) : tab === "bookings" ? (
-          <BookingsList bookings={bookings} />
+          <>
+            {provider && (
+              <IncomingBookings
+                bookings={incoming}
+                approved={approved}
+                onChanged={loadData}
+              />
+            )}
+            <div className={provider ? "mt-10" : ""}>
+              <h2 className="mb-4 text-lg font-semibold">Your bookings</h2>
+              <BookingsList bookings={bookings} />
+            </div>
+          </>
         ) : tab === "provider" ? (
           <ProviderEditor
             userId={user.id}
             displayName={profile?.display_name ?? ""}
             initial={provider}
-            approved={profile?.verification_status === "approved"}
+            approved={approved}
+
             onSaved={(row) => setProvider(row)}
           />
         ) : (
           <AccountPanel profile={profile} email={user.email ?? ""} />
+
         )}
       </div>
     </div>
@@ -159,6 +192,128 @@ function VerificationBanner({ status, notes }: { status: Profile["verification_s
         <p className="text-sm opacity-90">{config.body}</p>
       </div>
     </div>
+  );
+}
+
+function IncomingBookings({
+  bookings,
+  approved,
+  onChanged,
+}: {
+  bookings: Booking[];
+  approved: boolean;
+  onChanged: () => void | Promise<void>;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const pending = bookings.filter((b) => b.status === "pending");
+
+  async function updateStatus(id: string, status: "confirmed" | "cancelled") {
+    if (!approved) {
+      setErr("Your ID must be approved before you can accept bookings.");
+      return;
+    }
+    setErr(null);
+    setBusyId(id);
+    const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
+    setBusyId(null);
+    if (error) {
+      setErr(error.message);
+      return;
+    }
+    await onChanged();
+  }
+
+  return (
+    <section aria-labelledby="incoming-heading">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 id="incoming-heading" className="text-lg font-semibold">Incoming bookings</h2>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+            approved
+              ? "bg-green-500/10 text-green-700 dark:text-green-400"
+              : "bg-gold-soft text-gold-foreground"
+          }`}
+          data-testid="provider-verification-status"
+        >
+          {approved ? (
+            <><CheckCircle2 className="h-3.5 w-3.5" /> ID verified</>
+          ) : (
+            <><Clock className="h-3.5 w-3.5" /> ID pending — cannot accept bookings</>
+          )}
+        </span>
+      </div>
+
+      {!approved && (
+        <div
+          role="alert"
+          className="mb-4 rounded-3xl border border-gold/40 bg-gold-soft px-5 py-4 text-sm text-gold-foreground"
+        >
+          <p className="font-semibold">Booking acceptance is disabled</p>
+          <p className="mt-1 opacity-90">
+            You cannot accept or decline bookings until an admin approves your identity
+            document. Your clients will see incoming bookings as pending in the meantime.
+          </p>
+        </div>
+      )}
+
+      {bookings.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          No incoming bookings yet.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {bookings.map((b) => (
+            <div
+              key={b.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft"
+            >
+              <div>
+                <p className="font-semibold">{b.service}</p>
+                <p className="text-sm text-muted-foreground">
+                  {b.booking_date} at {b.booking_time} · {b.duration_hours}h
+                </p>
+                <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
+                  status: {b.status}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="mr-2 font-bold">${(b.total_cents / 100).toFixed(0)}</p>
+                {b.status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => updateStatus(b.id, "confirmed")}
+                      disabled={!approved || busyId === b.id}
+                      title={approved ? "Accept booking" : "ID must be approved before you can accept bookings"}
+                      className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-soft disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {busyId === b.id ? "…" : "Accept"}
+                    </button>
+                    <button
+                      onClick={() => updateStatus(b.id, "cancelled")}
+                      disabled={!approved || busyId === b.id}
+                      title={approved ? "Decline booking" : "ID must be approved before you can decline bookings"}
+                      className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Decline
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {err && (
+        <p role="alert" className="mt-3 text-sm text-destructive">{err}</p>
+      )}
+      {pending.length > 0 && !approved && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {pending.length} pending request{pending.length === 1 ? "" : "s"} waiting on your verification.
+        </p>
+      )}
+    </section>
   );
 }
 
