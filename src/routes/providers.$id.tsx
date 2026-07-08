@@ -15,7 +15,7 @@ import { Reveal } from "@/components/site/Reveal";
 import ProviderCard from "@/components/site/ProviderCard";
 
 export const Route = createFileRoute("/providers/$id")({
-  loader: ({ params }) => {
+  loader: ({ params }): { provider: Provider } => {
     const provider = getProvider(params.id);
     if (!provider) throw notFound();
     return { provider };
