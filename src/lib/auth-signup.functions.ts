@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const signupSchema = z.object({
+export const signupSchema = z.object({
   email: z.string().trim().email().max(255),
   password: z.string().min(8).max(128),
   displayName: z.string().trim().min(1).max(100),
