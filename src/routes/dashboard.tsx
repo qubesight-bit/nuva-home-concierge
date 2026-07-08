@@ -146,17 +146,31 @@ function Dashboard() {
         {dataLoading ? (
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
         ) : tab === "bookings" ? (
-          <BookingsList bookings={bookings} />
+          <>
+            {provider && (
+              <IncomingBookings
+                bookings={incoming}
+                approved={approved}
+                onChanged={loadData}
+              />
+            )}
+            <div className={provider ? "mt-10" : ""}>
+              <h2 className="mb-4 text-lg font-semibold">Your bookings</h2>
+              <BookingsList bookings={bookings} />
+            </div>
+          </>
         ) : tab === "provider" ? (
           <ProviderEditor
             userId={user.id}
             displayName={profile?.display_name ?? ""}
             initial={provider}
-            approved={profile?.verification_status === "approved"}
+            approved={approved}
+            verificationStatus={profile?.verification_status ?? "pending"}
             onSaved={(row) => setProvider(row)}
           />
         ) : (
           <AccountPanel profile={profile} email={user.email ?? ""} />
+
         )}
       </div>
     </div>
