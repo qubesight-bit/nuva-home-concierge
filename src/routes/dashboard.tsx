@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save, Wallet } from "lucide-react";
+import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save, Wallet, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/providers";
@@ -37,6 +37,12 @@ interface Booking {
   status: string;
   created_at: string;
 }
+interface CustomExtra {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+}
 interface ProviderRow {
   id: string;
   name: string;
@@ -50,6 +56,10 @@ interface ProviderRow {
   rate_per_hour: number;
   photo_path: string | null;
   is_published: boolean;
+  details_included: string | null;
+  details_excluded: string | null;
+  special_notes: string | null;
+  custom_extras: CustomExtra[] | null;
 }
 
 function Dashboard() {
@@ -360,6 +370,12 @@ function ProviderEditor({
   const [published, setPublished] = useState(initial?.is_published ?? false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [detailsIncluded, setDetailsIncluded] = useState(initial?.details_included ?? "");
+  const [detailsExcluded, setDetailsExcluded] = useState(initial?.details_excluded ?? "");
+  const [specialNotes, setSpecialNotes] = useState(initial?.special_notes ?? "");
+  const [customExtras, setCustomExtras] = useState<CustomExtra[]>(
+    Array.isArray(initial?.custom_extras) ? (initial!.custom_extras as CustomExtra[]) : []
+  );
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -372,6 +388,19 @@ function ProviderEditor({
 
   const selectedCountry = useMemo(() => COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0], [country]);
 
+  function addExtra() {
+    setCustomExtras((xs) => [
+      ...xs,
+      { id: crypto.randomUUID(), name: "", price: 0, description: "" },
+    ]);
+  }
+  function updateExtra(id: string, patch: Partial<CustomExtra>) {
+    setCustomExtras((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+  function removeExtra(id: string) {
+    setCustomExtras((xs) => xs.filter((x) => x.id !== id));
+  }
+
   async function save() {
     setMsg(null);
     setSaving(true);
@@ -383,6 +412,14 @@ function ProviderEditor({
       if (error) { setSaving(false); return setMsg({ ok: false, text: "Photo upload failed: " + error.message }); }
       photo_path = path;
     }
+    const cleanExtras = customExtras
+      .map((x) => ({
+        id: x.id,
+        name: x.name.trim().slice(0, 80),
+        price: Math.max(0, Math.round(Number(x.price) || 0)),
+        description: x.description.trim().slice(0, 300),
+      }))
+      .filter((x) => x.name.length > 0);
     const payload = {
       user_id: userId,
       name, tagline, bio, location,
@@ -393,6 +430,10 @@ function ProviderEditor({
       rate_per_hour: rate,
       photo_path,
       is_published: published && approved,
+      details_included: detailsIncluded.trim().slice(0, 2000) || null,
+      details_excluded: detailsExcluded.trim().slice(0, 2000) || null,
+      special_notes: specialNotes.trim().slice(0, 2000) || null,
+      custom_extras: cleanExtras,
     };
     const { data, error } = await supabase.from("providers").upsert(payload, { onConflict: "user_id" }).select().single();
     setSaving(false);
@@ -438,6 +479,114 @@ function ProviderEditor({
           </Field>
           <Field label="Rate per hour (USD)"><input type="number" min={20} value={rate} onChange={(e) => setRate(Number(e.target.value))} className={inputCls} /></Field>
         </div>
+
+        <div className="rounded-3xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold">What you offer</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Everyone works differently. Spell out exactly what's included, what's not, and any special
+            requirements so clients know what to expect before they book.
+          </p>
+          <div className="mt-4 space-y-4">
+            <Field label="✓ What's included in my base rate">
+              <textarea
+                value={detailsIncluded}
+                onChange={(e) => setDetailsIncluded(e.target.value)}
+                rows={4}
+                maxLength={2000}
+                placeholder={"e.g. Kitchen, bathrooms, dusting, vacuuming, mopping, bed-making, trash out. I bring my own eco-friendly products."}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="✗ What's NOT included">
+              <textarea
+                value={detailsExcluded}
+                onChange={(e) => setDetailsExcluded(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={"e.g. Exterior windows, laundry, ironing, pet waste, heavy furniture moving."}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Special notes / requirements">
+              <textarea
+                value={specialNotes}
+                onChange={(e) => setSpecialNotes(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={"e.g. Minimum 3 hours. Parking must be provided. No smoking homes. Advance notice for deep cleans."}
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold">Your custom extras</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add-ons clients can select on top of your base rate. Set your own name, price, and details.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addExtra}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-soft"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add extra
+            </button>
+          </div>
+
+          {customExtras.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+              No extras yet. Add anything you offer for an additional fee — laundry, oven, fridge, ironing, organizing, etc.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {customExtras.map((x) => (
+                <div key={x.id} className="rounded-2xl border border-border bg-background p-4">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_120px_auto]">
+                    <input
+                      value={x.name}
+                      onChange={(e) => updateExtra(x.id, { name: e.target.value })}
+                      placeholder="Extra name (e.g. Inside oven)"
+                      maxLength={80}
+                      className={inputCls}
+                    />
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={x.price}
+                        onChange={(e) => updateExtra(x.id, { price: Number(e.target.value) })}
+                        placeholder="Price"
+                        className={`${inputCls} pl-7`}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeExtra(x.id)}
+                      aria-label="Remove extra"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <textarea
+                    value={x.description}
+                    onChange={(e) => updateExtra(x.id, { description: e.target.value })}
+                    rows={2}
+                    maxLength={300}
+                    placeholder="Optional: describe what this extra includes"
+                    className={`${inputCls} mt-3`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <label className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4">
           <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} disabled={!approved} className="h-4 w-4" />
           <span className="text-sm">

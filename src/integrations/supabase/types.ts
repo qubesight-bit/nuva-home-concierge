@@ -155,6 +155,9 @@ export type Database = {
           country_code: string
           country_name: string
           created_at: string
+          custom_extras: Json
+          details_excluded: string | null
+          details_included: string | null
           flag: string | null
           id: string
           is_active: boolean
@@ -167,6 +170,7 @@ export type Database = {
           rating: number
           review_count: number
           services: string[]
+          special_notes: string | null
           tagline: string | null
           updated_at: string
           user_id: string
@@ -177,6 +181,9 @@ export type Database = {
           country_code: string
           country_name: string
           created_at?: string
+          custom_extras?: Json
+          details_excluded?: string | null
+          details_included?: string | null
           flag?: string | null
           id?: string
           is_active?: boolean
@@ -189,6 +196,7 @@ export type Database = {
           rating?: number
           review_count?: number
           services?: string[]
+          special_notes?: string | null
           tagline?: string | null
           updated_at?: string
           user_id: string
@@ -199,6 +207,9 @@ export type Database = {
           country_code?: string
           country_name?: string
           created_at?: string
+          custom_extras?: Json
+          details_excluded?: string | null
+          details_included?: string | null
           flag?: string | null
           id?: string
           is_active?: boolean
@@ -211,6 +222,7 @@ export type Database = {
           rating?: number
           review_count?: number
           services?: string[]
+          special_notes?: string | null
           tagline?: string | null
           updated_at?: string
           user_id?: string
