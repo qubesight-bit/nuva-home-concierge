@@ -370,6 +370,12 @@ function ProviderEditor({
   const [published, setPublished] = useState(initial?.is_published ?? false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [detailsIncluded, setDetailsIncluded] = useState(initial?.details_included ?? "");
+  const [detailsExcluded, setDetailsExcluded] = useState(initial?.details_excluded ?? "");
+  const [specialNotes, setSpecialNotes] = useState(initial?.special_notes ?? "");
+  const [customExtras, setCustomExtras] = useState<CustomExtra[]>(
+    Array.isArray(initial?.custom_extras) ? (initial!.custom_extras as CustomExtra[]) : []
+  );
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -382,6 +388,19 @@ function ProviderEditor({
 
   const selectedCountry = useMemo(() => COUNTRIES.find((c) => c.code === country) ?? COUNTRIES[0], [country]);
 
+  function addExtra() {
+    setCustomExtras((xs) => [
+      ...xs,
+      { id: crypto.randomUUID(), name: "", price: 0, description: "" },
+    ]);
+  }
+  function updateExtra(id: string, patch: Partial<CustomExtra>) {
+    setCustomExtras((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+  function removeExtra(id: string) {
+    setCustomExtras((xs) => xs.filter((x) => x.id !== id));
+  }
+
   async function save() {
     setMsg(null);
     setSaving(true);
@@ -393,6 +412,14 @@ function ProviderEditor({
       if (error) { setSaving(false); return setMsg({ ok: false, text: "Photo upload failed: " + error.message }); }
       photo_path = path;
     }
+    const cleanExtras = customExtras
+      .map((x) => ({
+        id: x.id,
+        name: x.name.trim().slice(0, 80),
+        price: Math.max(0, Math.round(Number(x.price) || 0)),
+        description: x.description.trim().slice(0, 300),
+      }))
+      .filter((x) => x.name.length > 0);
     const payload = {
       user_id: userId,
       name, tagline, bio, location,
@@ -403,6 +430,10 @@ function ProviderEditor({
       rate_per_hour: rate,
       photo_path,
       is_published: published && approved,
+      details_included: detailsIncluded.trim().slice(0, 2000) || null,
+      details_excluded: detailsExcluded.trim().slice(0, 2000) || null,
+      special_notes: specialNotes.trim().slice(0, 2000) || null,
+      custom_extras: cleanExtras,
     };
     const { data, error } = await supabase.from("providers").upsert(payload, { onConflict: "user_id" }).select().single();
     setSaving(false);
