@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save, Wallet } from "lucide-react";
+import { CalendarDays, User as UserIcon, Settings, LogOut, Loader2, CheckCircle2, Clock, XCircle, Upload, Save, Wallet, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/providers";
