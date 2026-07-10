@@ -378,6 +378,8 @@ function ProviderEditor({
   const [customExtras, setCustomExtras] = useState<CustomExtra[]>(
     Array.isArray(initial?.custom_extras) ? (initial!.custom_extras as CustomExtra[]) : []
   );
+  const [offersTopless, setOffersTopless] = useState<boolean>(initial?.offers_topless ?? false);
+  const [offersNude, setOffersNude] = useState<boolean>(initial?.offers_nude ?? false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
