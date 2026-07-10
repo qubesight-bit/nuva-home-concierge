@@ -527,6 +527,41 @@ function ProviderEditor({
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold">Dress code options</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Optional. Only tick what you're personally comfortable offering — clients will see this on your profile and can request it at booking. You can change these at any time.
+          </p>
+          <div className="mt-4 space-y-3">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 hover:border-gold">
+              <input
+                type="checkbox"
+                checked={offersTopless}
+                onChange={(e) => setOffersTopless(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-medium">I offer topless service</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">Cleaning performed topless, on request.</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 hover:border-gold">
+              <input
+                type="checkbox"
+                checked={offersNude}
+                onChange={(e) => setOffersNude(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-medium">I offer fully nude / naturist service</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">Cleaning performed fully nude, on request.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+
+
+        <div className="rounded-3xl border border-border bg-card p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold">Your custom extras</h3>
