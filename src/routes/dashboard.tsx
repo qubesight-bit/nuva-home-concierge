@@ -37,6 +37,12 @@ interface Booking {
   status: string;
   created_at: string;
 }
+interface CustomExtra {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+}
 interface ProviderRow {
   id: string;
   name: string;
@@ -50,6 +56,10 @@ interface ProviderRow {
   rate_per_hour: number;
   photo_path: string | null;
   is_published: boolean;
+  details_included: string | null;
+  details_excluded: string | null;
+  special_notes: string | null;
+  custom_extras: CustomExtra[] | null;
 }
 
 function Dashboard() {
