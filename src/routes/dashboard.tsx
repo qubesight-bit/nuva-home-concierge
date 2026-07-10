@@ -479,6 +479,114 @@ function ProviderEditor({
           </Field>
           <Field label="Rate per hour (USD)"><input type="number" min={20} value={rate} onChange={(e) => setRate(Number(e.target.value))} className={inputCls} /></Field>
         </div>
+
+        <div className="rounded-3xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold">What you offer</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Everyone works differently. Spell out exactly what's included, what's not, and any special
+            requirements so clients know what to expect before they book.
+          </p>
+          <div className="mt-4 space-y-4">
+            <Field label="✓ What's included in my base rate">
+              <textarea
+                value={detailsIncluded}
+                onChange={(e) => setDetailsIncluded(e.target.value)}
+                rows={4}
+                maxLength={2000}
+                placeholder={"e.g. Kitchen, bathrooms, dusting, vacuuming, mopping, bed-making, trash out. I bring my own eco-friendly products."}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="✗ What's NOT included">
+              <textarea
+                value={detailsExcluded}
+                onChange={(e) => setDetailsExcluded(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={"e.g. Exterior windows, laundry, ironing, pet waste, heavy furniture moving."}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Special notes / requirements">
+              <textarea
+                value={specialNotes}
+                onChange={(e) => setSpecialNotes(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={"e.g. Minimum 3 hours. Parking must be provided. No smoking homes. Advance notice for deep cleans."}
+                className={inputCls}
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold">Your custom extras</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add-ons clients can select on top of your base rate. Set your own name, price, and details.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={addExtra}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-soft"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add extra
+            </button>
+          </div>
+
+          {customExtras.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+              No extras yet. Add anything you offer for an additional fee — laundry, oven, fridge, ironing, organizing, etc.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {customExtras.map((x) => (
+                <div key={x.id} className="rounded-2xl border border-border bg-background p-4">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_120px_auto]">
+                    <input
+                      value={x.name}
+                      onChange={(e) => updateExtra(x.id, { name: e.target.value })}
+                      placeholder="Extra name (e.g. Inside oven)"
+                      maxLength={80}
+                      className={inputCls}
+                    />
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={x.price}
+                        onChange={(e) => updateExtra(x.id, { price: Number(e.target.value) })}
+                        placeholder="Price"
+                        className={`${inputCls} pl-7`}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeExtra(x.id)}
+                      aria-label="Remove extra"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-border text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <textarea
+                    value={x.description}
+                    onChange={(e) => updateExtra(x.id, { description: e.target.value })}
+                    rows={2}
+                    maxLength={300}
+                    placeholder="Optional: describe what this extra includes"
+                    className={`${inputCls} mt-3`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <label className="flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4">
           <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} disabled={!approved} className="h-4 w-4" />
           <span className="text-sm">
