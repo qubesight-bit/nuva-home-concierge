@@ -60,6 +60,8 @@ interface ProviderRow {
   details_excluded: string | null;
   special_notes: string | null;
   custom_extras: CustomExtra[] | null;
+  offers_topless: boolean | null;
+  offers_nude: boolean | null;
 }
 
 function Dashboard() {
