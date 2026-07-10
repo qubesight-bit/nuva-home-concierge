@@ -438,6 +438,8 @@ function ProviderEditor({
       details_excluded: detailsExcluded.trim().slice(0, 2000) || null,
       special_notes: specialNotes.trim().slice(0, 2000) || null,
       custom_extras: cleanExtras,
+      offers_topless: offersTopless,
+      offers_nude: offersNude,
     };
     const { data, error } = await supabase.from("providers").upsert(payload, { onConflict: "user_id" }).select().single();
     setSaving(false);
