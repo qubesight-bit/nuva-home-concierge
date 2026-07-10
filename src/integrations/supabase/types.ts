@@ -165,6 +165,8 @@ export type Database = {
           languages: string[]
           location: string | null
           name: string
+          offers_nude: boolean
+          offers_topless: boolean
           photo_path: string | null
           rate_per_hour: number
           rating: number
@@ -191,6 +193,8 @@ export type Database = {
           languages?: string[]
           location?: string | null
           name: string
+          offers_nude?: boolean
+          offers_topless?: boolean
           photo_path?: string | null
           rate_per_hour?: number
           rating?: number
@@ -217,6 +221,8 @@ export type Database = {
           languages?: string[]
           location?: string | null
           name?: string
+          offers_nude?: boolean
+          offers_topless?: boolean
           photo_path?: string | null
           rate_per_hour?: number
           rating?: number

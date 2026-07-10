@@ -60,6 +60,8 @@ interface ProviderRow {
   details_excluded: string | null;
   special_notes: string | null;
   custom_extras: CustomExtra[] | null;
+  offers_topless: boolean | null;
+  offers_nude: boolean | null;
 }
 
 function Dashboard() {
@@ -376,6 +378,8 @@ function ProviderEditor({
   const [customExtras, setCustomExtras] = useState<CustomExtra[]>(
     Array.isArray(initial?.custom_extras) ? (initial!.custom_extras as CustomExtra[]) : []
   );
+  const [offersTopless, setOffersTopless] = useState<boolean>(initial?.offers_topless ?? false);
+  const [offersNude, setOffersNude] = useState<boolean>(initial?.offers_nude ?? false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -434,6 +438,8 @@ function ProviderEditor({
       details_excluded: detailsExcluded.trim().slice(0, 2000) || null,
       special_notes: specialNotes.trim().slice(0, 2000) || null,
       custom_extras: cleanExtras,
+      offers_topless: offersTopless,
+      offers_nude: offersNude,
     };
     const { data, error } = await supabase.from("providers").upsert(payload, { onConflict: "user_id" }).select().single();
     setSaving(false);
@@ -519,6 +525,41 @@ function ProviderEditor({
             </Field>
           </div>
         </div>
+
+        <div className="rounded-3xl border border-border bg-card p-5">
+          <h3 className="text-base font-semibold">Dress code options</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Optional. Only tick what you're personally comfortable offering — clients will see this on your profile and can request it at booking. You can change these at any time.
+          </p>
+          <div className="mt-4 space-y-3">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 hover:border-gold">
+              <input
+                type="checkbox"
+                checked={offersTopless}
+                onChange={(e) => setOffersTopless(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-medium">I offer topless service</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">Cleaning performed topless, on request.</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 hover:border-gold">
+              <input
+                type="checkbox"
+                checked={offersNude}
+                onChange={(e) => setOffersNude(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span className="text-sm">
+                <span className="font-medium">I offer fully nude / naturist service</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">Cleaning performed fully nude, on request.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+
 
         <div className="rounded-3xl border border-border bg-card p-5">
           <div className="flex items-start justify-between gap-3">
