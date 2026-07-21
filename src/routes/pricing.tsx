@@ -1,6 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import { Reveal } from "@/components/site/Reveal";
+import { useAuth } from "@/hooks/use-auth";
+import { sendMembershipPaymentLink } from "@/lib/membership.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -44,7 +56,51 @@ const tiers = [
   },
 ];
 
+const PAYMENT_NOTICE =
+  "In a few moments you will receive a link to process the payment";
+
 function Pricing() {
+  const { user } = useAuth();
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function deliverPaymentLink(to: string) {
+    setSending(true);
+    try {
+      await sendMembershipPaymentLink({ data: { email: to } });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not send the payment link email.";
+      toast.error(message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function startNuvaPlusPayment() {
+    toast.message(PAYMENT_NOTICE);
+
+    const knownEmail = user?.email?.trim();
+    if (knownEmail) {
+      void deliverPaymentLink(knownEmail);
+      return;
+    }
+
+    setEmailDialogOpen(true);
+  }
+
+  async function submitEmailForPayment(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setEmailDialogOpen(false);
+    await deliverPaymentLink(trimmed);
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
       <Reveal className="mx-auto max-w-2xl text-center">
@@ -85,16 +141,23 @@ function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link
-                to={t.name === "Nuva Estate" ? "/contact" : "/browse"}
-                className={`mt-8 block rounded-full py-3.5 text-center text-sm font-semibold transition-all ${
-                  t.featured
-                    ? "bg-gradient-gold text-black shadow-gold hover:scale-[1.02]"
-                    : "bg-primary text-primary-foreground hover:shadow-soft"
-                }`}
-              >
-                {t.cta}
-              </Link>
+              {t.name === "Nuva Plus" ? (
+                <button
+                  type="button"
+                  onClick={startNuvaPlusPayment}
+                  disabled={sending}
+                  className="mt-8 block w-full rounded-full bg-gradient-gold py-3.5 text-center text-sm font-semibold text-black shadow-gold transition-all hover:scale-[1.02] disabled:opacity-70"
+                >
+                  {sending ? "Sending…" : t.cta}
+                </button>
+              ) : (
+                <Link
+                  to={t.name === "Nuva Estate" ? "/contact" : "/browse"}
+                  className="mt-8 block rounded-full bg-primary py-3.5 text-center text-sm font-semibold text-primary-foreground transition-all hover:shadow-soft"
+                >
+                  {t.cta}
+                </Link>
+              )}
             </div>
           </Reveal>
         ))}
@@ -109,6 +172,37 @@ function Pricing() {
           Learn about earning with Nuva
         </Link>
       </Reveal>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Where should we send your payment link?</DialogTitle>
+            <DialogDescription>
+              Enter the email address where you want to receive the PayPal link for Nuva Plus.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submitEmailForPayment} className="space-y-4">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              autoFocus
+              className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+            />
+            <DialogFooter>
+              <button
+                type="submit"
+                disabled={sending}
+                className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-70"
+              >
+                {sending ? "Sending…" : "Send payment link"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
