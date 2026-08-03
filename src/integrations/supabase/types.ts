@@ -73,6 +73,63 @@ export type Database = {
           },
         ]
       }
+      didit_sessions: {
+        Row: {
+          created_at: string
+          decision: Json | null
+          id: string
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision?: Json | null
+          id?: string
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          decision?: Json | null
+          id?: string
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: []
+      }
+      didit_webhook_events: {
+        Row: {
+          event_id: string
+          received_at: string
+          session_id: string | null
+          status: string | null
+          webhook_type: string | null
+        }
+        Insert: {
+          event_id: string
+          received_at?: string
+          session_id?: string | null
+          status?: string | null
+          webhook_type?: string | null
+        }
+        Update: {
+          event_id?: string
+          received_at?: string
+          session_id?: string | null
+          status?: string | null
+          webhook_type?: string | null
+        }
+        Relationships: []
+      }
       id_verifications: {
         Row: {
           created_at: string

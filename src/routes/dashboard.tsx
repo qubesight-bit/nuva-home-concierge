@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/providers";
 import { updateBookingStatus } from "@/lib/bookings.functions";
+import { DiditVerifyCard } from "@/components/site/DiditVerifyCard";
+
 
 
 export const Route = createFileRoute("/dashboard")({
@@ -137,6 +139,8 @@ function Dashboard() {
       </div>
 
       {profile && <VerificationBanner status={profile.verification_status} notes={profile.review_notes} />}
+      <DiditVerifyCard approved={approved} />
+
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
         {([
