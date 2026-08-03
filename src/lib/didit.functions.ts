@@ -1,0 +1,70 @@
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+/**
+ * Per-session config — NOT a secret, NOT an env var.
+ * "KYC + AML" workflow from the Didit console.
+ */
+export const DIDIT_WORKFLOW_ID = "72eaefd2-8638-40bf-98c9-3100d5dc313a";
+
+/**
+ * Creates a Didit verification session for the signed-in user.
+ * The API key never leaves the server; only { url, session_id } is returned.
+ */
+export const createDiditSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const apiKey = process.env["DIDIT_API_KEY"];
+    if (!apiKey) throw new Error("Identity verification is not configured yet.");
+
+    const origin = process.env["PUBLIC_SITE_URL"] ?? "https://nuva.lovable.app";
+
+    const res = await fetch("https://verification.didit.me/v3/session/", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workflow_id: DIDIT_WORKFLOW_ID,
+        vendor_data: context.userId,
+        callback: `${origin}/dashboard`,
+      }),
+    });
+
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error("Didit session create failed", res.status, detail);
+      throw new Error("Could not start identity verification. Please try again.");
+    }
+
+    const session = (await res.json()) as {
+      session_id: string;
+      url: string;
+      status?: string;
+    };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("didit_sessions").upsert(
+      {
+        user_id: context.userId,
+        session_id: session.session_id,
+        workflow_id: DIDIT_WORKFLOW_ID,
+        status: session.status ?? "Not Started",
+      },
+      { onConflict: "session_id" },
+    );
+
+    return { url: session.url, session_id: session.session_id };
+  });
+
+/** Latest Didit session status for the signed-in user (UI hint only). */
+export const getMyDiditStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data } = await context.supabase
+      .from("didit_sessions")
+      .select("session_id, status, updated_at")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data ?? null;
+  });
