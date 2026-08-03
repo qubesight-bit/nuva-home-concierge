@@ -25,6 +25,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProvidersIdRouteImport } from './routes/providers.$id'
 import { Route as BookIdRouteImport } from './routes/book.$id'
+import { Route as ApiPublicWebhooksDiditRouteImport } from './routes/api/public/webhooks/didit'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -106,6 +107,11 @@ const BookIdRoute = BookIdRouteImport.update({
   path: '/book/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksDiditRoute = ApiPublicWebhooksDiditRouteImport.update({
+  id: '/api/public/webhooks/didit',
+  path: '/api/public/webhooks/didit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/book/$id': typeof BookIdRoute
   '/providers/$id': typeof ProvidersIdRoute
+  '/api/public/webhooks/didit': typeof ApiPublicWebhooksDiditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/book/$id': typeof BookIdRoute
   '/providers/$id': typeof ProvidersIdRoute
+  '/api/public/webhooks/didit': typeof ApiPublicWebhooksDiditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/book/$id': typeof BookIdRoute
   '/providers/$id': typeof ProvidersIdRoute
+  '/api/public/webhooks/didit': typeof ApiPublicWebhooksDiditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/book/$id'
     | '/providers/$id'
+    | '/api/public/webhooks/didit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/book/$id'
     | '/providers/$id'
+    | '/api/public/webhooks/didit'
   id:
     | '__root__'
     | '/'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/book/$id'
     | '/providers/$id'
+    | '/api/public/webhooks/didit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -236,6 +248,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   BookIdRoute: typeof BookIdRoute
   ProvidersIdRoute: typeof ProvidersIdRoute
+  ApiPublicWebhooksDiditRoute: typeof ApiPublicWebhooksDiditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -352,6 +365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/didit': {
+      id: '/api/public/webhooks/didit'
+      path: '/api/public/webhooks/didit'
+      fullPath: '/api/public/webhooks/didit'
+      preLoaderRoute: typeof ApiPublicWebhooksDiditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -372,17 +392,8 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   BookIdRoute: BookIdRoute,
   ProvidersIdRoute: ProvidersIdRoute,
+  ApiPublicWebhooksDiditRoute: ApiPublicWebhooksDiditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
