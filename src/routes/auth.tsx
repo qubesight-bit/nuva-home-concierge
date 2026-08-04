@@ -137,8 +137,9 @@ function AuthPage() {
             </div>
             <h1 className="mt-6 text-2xl font-bold">Account created</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Your ID document has been submitted for manual review. You'll receive an email
-              once an admin approves your account. This usually takes 24–48 hours.
+              We're redirecting you to our secure age &amp; identity verification (Didit).
+              Every new account must complete it before using Nuva. If the page doesn't
+              open automatically, continue from your dashboard.
             </p>
             <button
               onClick={() => navigate({ to: "/dashboard" })}
@@ -146,6 +147,7 @@ function AuthPage() {
             >
               Go to dashboard
             </button>
+
           </div>
         </Reveal>
       </div>
