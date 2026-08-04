@@ -5,6 +5,8 @@ import { Reveal } from "@/components/site/Reveal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { registerAccount } from "@/lib/auth-signup.functions";
+import { createDiditSession } from "@/lib/didit.functions";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
