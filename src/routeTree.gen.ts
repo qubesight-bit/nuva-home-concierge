@@ -21,6 +21,7 @@ import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as BecomeAProviderRouteImport } from './routes/become-a-provider'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AgeVerificationRouteImport } from './routes/age-verification'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProvidersIdRouteImport } from './routes/providers.$id'
@@ -87,6 +88,11 @@ const AgeVerificationRoute = AgeVerificationRouteImport.update({
   path: '/age-verification',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -116,6 +122,7 @@ const ApiPublicWebhooksDiditRoute = ApiPublicWebhooksDiditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/age-verification': typeof AgeVerificationRoute
   '/auth': typeof AuthRoute
   '/become-a-provider': typeof BecomeAProviderRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/age-verification': typeof AgeVerificationRoute
   '/auth': typeof AuthRoute
   '/become-a-provider': typeof BecomeAProviderRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/age-verification': typeof AgeVerificationRoute
   '/auth': typeof AuthRoute
   '/become-a-provider': typeof BecomeAProviderRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/age-verification'
     | '/auth'
     | '/become-a-provider'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/admin'
     | '/age-verification'
     | '/auth'
     | '/become-a-provider'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/age-verification'
     | '/auth'
     | '/become-a-provider'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
   AgeVerificationRoute: typeof AgeVerificationRoute
   AuthRoute: typeof AuthRoute
   BecomeAProviderRoute: typeof BecomeAProviderRoute
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgeVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -378,6 +398,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
   AgeVerificationRoute: AgeVerificationRoute,
   AuthRoute: AuthRoute,
   BecomeAProviderRoute: BecomeAProviderRoute,
@@ -397,13 +418,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

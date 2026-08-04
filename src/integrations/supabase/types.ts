@@ -133,36 +133,45 @@ export type Database = {
       id_verifications: {
         Row: {
           created_at: string
+          date_of_birth: string | null
           document_path: string
           document_type: Database["public"]["Enums"]["id_document_type"]
           id: string
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          selfie_date: string | null
+          selfie_path: string | null
           status: Database["public"]["Enums"]["verification_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          date_of_birth?: string | null
           document_path: string
           document_type: Database["public"]["Enums"]["id_document_type"]
           id?: string
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_date?: string | null
+          selfie_path?: string | null
           status?: Database["public"]["Enums"]["verification_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          date_of_birth?: string | null
           document_path?: string
           document_type?: Database["public"]["Enums"]["id_document_type"]
           id?: string
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selfie_date?: string | null
+          selfie_path?: string | null
           status?: Database["public"]["Enums"]["verification_status"]
           updated_at?: string
           user_id?: string
@@ -172,6 +181,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          date_of_birth: string | null
           display_name: string | null
           email: string | null
           id: string
@@ -183,6 +193,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           email?: string | null
           id: string
@@ -194,6 +205,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           email?: string | null
           id?: string

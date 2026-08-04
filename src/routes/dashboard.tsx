@@ -6,6 +6,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/providers";
 import { updateBookingStatus } from "@/lib/bookings.functions";
 import { DiditVerifyCard } from "@/components/site/DiditVerifyCard";
+import { ManualVerifyCard } from "@/components/site/ManualVerifyCard";
+
 
 
 
@@ -140,6 +142,8 @@ function Dashboard() {
 
       {profile && <VerificationBanner status={profile.verification_status} notes={profile.review_notes} />}
       <DiditVerifyCard approved={approved} />
+      <ManualVerifyCard userId={user.id} approved={approved} />
+
 
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
