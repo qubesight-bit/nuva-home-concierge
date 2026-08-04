@@ -64,8 +64,7 @@ function AuthPage() {
       setAgeError("You must confirm you are at least 18 years old to create an account.");
       return;
     }
-    if (!file) return setError("Please upload a photo of your ID document.");
-    if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
+    if (file && file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
 
     let userId: string;
@@ -92,30 +91,39 @@ function AuthPage() {
       return setError("Account created but sign-in failed: " + siError.message);
     }
 
-
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `${userId}/${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("id-documents")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
-      setSubmitting(false);
-      return setError("Account created, but document upload failed: " + uploadError.message);
+    if (file) {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("id-documents")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (!uploadError) {
+        await supabase.from("id_verifications").insert({
+          user_id: userId,
+          document_type: docType,
+          document_path: path,
+        });
+      }
     }
 
-    const { error: verifError } = await supabase.from("id_verifications").insert({
-      user_id: userId,
-      document_type: docType,
-      document_path: path,
-    });
-    if (verifError) {
+    // Every new account must complete Didit age & identity verification.
+    try {
+      const session = await createDiditSession();
+      setSignupComplete(true);
+      window.location.href = session.url;
+      return;
+    } catch (err) {
       setSubmitting(false);
-      return setError("Uploaded, but couldn't record verification: " + verifError.message);
+      setSignupComplete(true);
+      setError(
+        err instanceof Error
+          ? `Account created, but we couldn't start age verification: ${err.message}`
+          : "Account created, but we couldn't start age verification.",
+      );
+      return;
     }
-
-    setSubmitting(false);
-    setSignupComplete(true);
   }
+
 
   if (signupComplete) {
     return (
