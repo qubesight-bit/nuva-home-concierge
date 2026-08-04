@@ -6,6 +6,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/providers";
 import { updateBookingStatus } from "@/lib/bookings.functions";
 import { DiditVerifyCard } from "@/components/site/DiditVerifyCard";
+import { ManualVerifyCard } from "@/components/site/ManualVerifyCard";
+
 
 
 
