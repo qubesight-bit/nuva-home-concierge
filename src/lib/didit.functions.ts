@@ -32,7 +32,23 @@ export const createDiditSession = createServerFn({ method: "POST" })
     if (!res.ok) {
       const detail = await res.text();
       console.error("Didit session create failed", res.status, detail);
-      throw new Error("Could not start identity verification. Please try again.");
+      let reason = "";
+      try {
+        const parsed = JSON.parse(detail) as { detail?: string; message?: string };
+        reason = parsed.detail ?? parsed.message ?? "";
+      } catch {
+        /* non-JSON body */
+      }
+      if (/credit/i.test(reason)) {
+        throw new Error(
+          "Identity verification is temporarily unavailable (verification provider account is out of credits). Please try again later.",
+        );
+      }
+      throw new Error(
+        reason
+          ? `Could not start identity verification: ${reason}`
+          : "Could not start identity verification. Please try again.",
+      );
     }
 
     const session = (await res.json()) as {
