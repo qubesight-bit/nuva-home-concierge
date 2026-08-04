@@ -5,6 +5,8 @@ import { Reveal } from "@/components/site/Reveal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { registerAccount } from "@/lib/auth-signup.functions";
+import { createDiditSession } from "@/lib/didit.functions";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -64,8 +66,7 @@ function AuthPage() {
       setAgeError("You must confirm you are at least 18 years old to create an account.");
       return;
     }
-    if (!file) return setError("Please upload a photo of your ID document.");
-    if (file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
+    if (file && file.size > 10 * 1024 * 1024) return setError("Document must be under 10MB.");
     setSubmitting(true);
 
     let userId: string;
@@ -92,30 +93,39 @@ function AuthPage() {
       return setError("Account created but sign-in failed: " + siError.message);
     }
 
-
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `${userId}/${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("id-documents")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
-      setSubmitting(false);
-      return setError("Account created, but document upload failed: " + uploadError.message);
+    if (file) {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("id-documents")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (!uploadError) {
+        await supabase.from("id_verifications").insert({
+          user_id: userId,
+          document_type: docType,
+          document_path: path,
+        });
+      }
     }
 
-    const { error: verifError } = await supabase.from("id_verifications").insert({
-      user_id: userId,
-      document_type: docType,
-      document_path: path,
-    });
-    if (verifError) {
+    // Every new account must complete Didit age & identity verification.
+    try {
+      const session = await createDiditSession();
+      setSignupComplete(true);
+      window.location.href = session.url;
+      return;
+    } catch (err) {
       setSubmitting(false);
-      return setError("Uploaded, but couldn't record verification: " + verifError.message);
+      setSignupComplete(true);
+      setError(
+        err instanceof Error
+          ? `Account created, but we couldn't start age verification: ${err.message}`
+          : "Account created, but we couldn't start age verification.",
+      );
+      return;
     }
-
-    setSubmitting(false);
-    setSignupComplete(true);
   }
+
 
   if (signupComplete) {
     return (
@@ -127,8 +137,9 @@ function AuthPage() {
             </div>
             <h1 className="mt-6 text-2xl font-bold">Account created</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Your ID document has been submitted for manual review. You'll receive an email
-              once an admin approves your account. This usually takes 24–48 hours.
+              We're redirecting you to our secure age &amp; identity verification (Didit).
+              Every new account must complete it before using Nuva. If the page doesn't
+              open automatically, continue from your dashboard.
             </p>
             <button
               onClick={() => navigate({ to: "/dashboard" })}
@@ -136,6 +147,7 @@ function AuthPage() {
             >
               Go to dashboard
             </button>
+
           </div>
         </Reveal>
       </div>
@@ -167,7 +179,7 @@ function AuthPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
               ? "Log in to manage bookings and your profile."
-              : "18+ only. Every account is manually reviewed after an ID upload."}
+              : "18+ only. After signing up you'll be sent to our secure age & identity check."}
           </p>
 
           <form
@@ -216,7 +228,7 @@ function AuthPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Upload ID (photo or scan)</label>
+                  <label className="text-sm font-medium">Upload ID (optional — Didit verification is required)</label>
                   <label className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-background px-4 py-6 text-center transition-colors hover:border-gold">
                     <Upload className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">
