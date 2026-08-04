@@ -85,18 +85,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Nuva is a professional nude housekeeping marketplace. Verified housekeepers work in the nude as part of the service — strictly non-sexual, with a zero-tolerance code of conduct.",
+          "Nuva is a professional nude housekeeping marketplace — verified housekeepers work in the nude as part of the service. Strictly non-sexual, zero-tolerance conduct policy, secure and private.",
       },
       { name: "author", content: "Nuva" },
       { property: "og:title", content: "Nuva — Premium Nude Housekeeping. Strictly Non-Sexual." },
       {
         property: "og:description",
         content:
-          "A professional cleaning marketplace where housekeepers work in the nude. Strictly non-sexual, verified, safe, and private.",
+          "Nuva is a professional nude housekeeping marketplace — verified housekeepers work in the nude as part of the service. Strictly non-sexual, zero-tolerance conduct policy, secure and private.",
       },
 
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Nuva — Premium Nude Housekeeping. Strictly Non-Sexual." },
+      { name: "twitter:description", content: "Nuva is a professional nude housekeeping marketplace — verified housekeepers work in the nude as part of the service. Strictly non-sexual, zero-tolerance conduct policy, secure and private." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8cf53e6a-eaaf-4f9c-83f2-ba2895204f38/id-preview-bc3a436e--1c0356c9-f6cc-43d1-8c6e-0161f4290904.lovable.app-1785854974489.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8cf53e6a-eaaf-4f9c-83f2-ba2895204f38/id-preview-bc3a436e--1c0356c9-f6cc-43d1-8c6e-0161f4290904.lovable.app-1785854974489.png" },
     ],
     links: [
       {
