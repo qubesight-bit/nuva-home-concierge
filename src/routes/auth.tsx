@@ -179,7 +179,7 @@ function AuthPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
               ? "Log in to manage bookings and your profile."
-              : "18+ only. Every account is manually reviewed after an ID upload."}
+              : "18+ only. After signing up you'll be sent to our secure age &amp; identity check."}
           </p>
 
           <form
@@ -228,7 +228,7 @@ function AuthPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Upload ID (photo or scan)</label>
+                  <label className="text-sm font-medium">Upload ID (optional — Didit verification is required)</label>
                   <label className="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-background px-4 py-6 text-center transition-colors hover:border-gold">
                     <Upload className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">
