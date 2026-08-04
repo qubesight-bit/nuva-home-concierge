@@ -140,6 +140,8 @@ function Dashboard() {
 
       {profile && <VerificationBanner status={profile.verification_status} notes={profile.review_notes} />}
       <DiditVerifyCard approved={approved} />
+      <ManualVerifyCard userId={user.id} approved={approved} />
+
 
 
       <div className="mt-8 flex gap-2 overflow-x-auto pb-2">
