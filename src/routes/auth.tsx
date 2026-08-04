@@ -179,7 +179,7 @@ function AuthPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "login"
               ? "Log in to manage bookings and your profile."
-              : "18+ only. After signing up you'll be sent to our secure age &amp; identity check."}
+              : "18+ only. After signing up you'll be sent to our secure age & identity check."}
           </p>
 
           <form
