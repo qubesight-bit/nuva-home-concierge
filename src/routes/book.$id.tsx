@@ -138,7 +138,7 @@ function BookingFlow() {
         <div className="mt-8 rounded-3xl border border-border bg-card p-6 text-left shadow-soft">
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Service</span><span className="font-medium">{selectedService.name}</span></div>
           <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Duration</span><span className="font-medium">{duration} hours</span></div>
-          <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Total paid</span><span className="font-bold">${total}</span></div>
+          <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Total paid</span><span className="font-bold">${chargedTotal ?? total}</span></div>
         </div>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link to="/dashboard" className="rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground">
