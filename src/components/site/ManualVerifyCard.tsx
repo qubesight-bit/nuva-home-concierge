@@ -29,7 +29,7 @@ export function ManualVerifyCard({ userId, approved }: { userId: string; approve
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [existing, setExisting] = useState<{ status: string } | null>(null);
+  const [existing, setExisting] = useState<{ status: string; review_notes: string | null; reviewed_at: string | null } | null>(null);
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function ManualVerifyCard({ userId, approved }: { userId: string; approve
     (async () => {
       const { data } = await supabase
         .from("id_verifications")
-        .select("status")
+        .select("status, review_notes, reviewed_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -110,6 +110,8 @@ export function ManualVerifyCard({ userId, approved }: { userId: string; approve
     );
   }
 
+  const rejected = existing?.status === "rejected";
+
   return (
     <div className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-soft">
       <div className="flex items-start gap-3">
@@ -120,6 +122,25 @@ export function ManualVerifyCard({ userId, approved }: { userId: string; approve
             Required before you can receive bookings. Your documents are private and visible only to
             Nuva admins.
           </p>
+
+          {rejected && (
+            <div className="mt-4 flex items-start gap-3 rounded-2xl bg-destructive/10 px-4 py-3 text-destructive" role="alert">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold">
+                  Your last submission was rejected
+                  {existing?.reviewed_at ? ` on ${new Date(existing.reviewed_at).toLocaleDateString()}` : ""}.
+                </p>
+                <p className="mt-1 opacity-90">
+                  {existing?.review_notes?.trim()
+                    ? `Reason: ${existing.review_notes}`
+                    : "No reason was provided. Please re-upload clear, valid documents."}
+                </p>
+                <p className="mt-1 opacity-90">You can re-submit your details below as many times as needed.</p>
+              </div>
+            </div>
+          )}
+
 
           <form onSubmit={submit} className="mt-5 space-y-4" noValidate>
             <div className="grid gap-4 sm:grid-cols-2">
