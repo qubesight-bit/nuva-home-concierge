@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, BadgeCheck, Check, Lock, Loader2, Star } from "lucide-react";
 import { getCountry, getProvider, SERVICES, EXTRAS } from "@/lib/providers";
 import { browseSearchValidator, safeCategory } from "@/lib/browse-search";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { createBooking } from "@/lib/bookings.functions";
 import { useAuth } from "@/hooks/use-auth";
+
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -68,10 +70,13 @@ function BookingFlow() {
   const [duration, setDuration] = useState(3);
   const [extras, setExtras] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [chargedTotal, setChargedTotal] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const submitBooking = useServerFn(createBooking);
+
 
   async function confirmBooking() {
     setError(null);
@@ -82,24 +87,28 @@ function BookingFlow() {
     setSaving(true);
     // Only persist bookings for real DB provider ids (UUIDs). Mock listings stay UI-only.
     if (UUID_RE.test(provider.id)) {
-      const { error: insertError } = await supabase.from("bookings").insert({
-        client_user_id: user.id,
-        provider_id: provider.id,
-        service: selectedService.name,
-        booking_date: date,
-        booking_time: time,
-        duration_hours: duration,
-        extras,
-        total_cents: total * 100,
-      });
-      if (insertError) {
+      try {
+        // The server prices the booking — no amount is sent from the browser.
+        const result = await submitBooking({
+          data: {
+            providerId: provider.id,
+            serviceId: service,
+            bookingDate: date,
+            bookingTime: time,
+            durationHours: duration,
+            extras,
+          },
+        });
+        setChargedTotal(result.totalCents / 100);
+      } catch (e) {
         setSaving(false);
-        return setError(insertError.message);
+        return setError(e instanceof Error ? e.message : "Could not confirm your booking.");
       }
     }
     setSaving(false);
     setConfirmed(true);
   }
+
 
   const days = useMemo(() => nextDays(10), []);
   const selectedService = SERVICES.find((s) => s.id === service)!;
@@ -129,7 +138,7 @@ function BookingFlow() {
         <div className="mt-8 rounded-3xl border border-border bg-card p-6 text-left shadow-soft">
           <div className="flex justify-between text-sm"><span className="text-muted-foreground">Service</span><span className="font-medium">{selectedService.name}</span></div>
           <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Duration</span><span className="font-medium">{duration} hours</span></div>
-          <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Total paid</span><span className="font-bold">${total}</span></div>
+          <div className="mt-2 flex justify-between text-sm"><span className="text-muted-foreground">Total paid</span><span className="font-bold">${chargedTotal ?? total}</span></div>
         </div>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link to="/dashboard" className="rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground">
