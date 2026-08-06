@@ -17,9 +17,13 @@ export const createDiditSession = createServerFn({ method: "POST" })
     const apiKey = process.env["DIDIT_API_KEY"];
     if (!apiKey) throw new Error("Identity verification is not configured yet.");
 
-    // Each Didit session costs credits — throttle per user and cap total spend
-    // before the paid API is ever called.
-    const { enforceRateLimits } = await import("@/lib/rate-limit.server");
+    // Each Didit session costs credits. Per-user limits alone are defeated by
+    // registering fresh accounts, so we also throttle by caller IP and cap
+    // total spend per hour and per day before the paid API is ever called.
+    const { enforceRateLimits, getClientIdentity } = await import(
+      "@/lib/rate-limit.server"
+    );
+    const ip = getClientIdentity();
     await enforceRateLimits([
       {
         bucket: "didit:session:user:hour",
@@ -38,6 +42,32 @@ export const createDiditSession = createServerFn({ method: "POST" })
           "Daily identity verification limit reached for this account. Please try again tomorrow or contact support.",
       },
       {
+        // Blocks the "make a new account per session" money pump.
+        bucket: "didit:session:ip:hour",
+        identity: ip,
+        limit: 5,
+        windowSeconds: 3600,
+        message:
+          "Too many identity verification attempts from this connection. Please try again in an hour.",
+      },
+      {
+        bucket: "didit:session:ip:day",
+        identity: ip,
+        limit: 12,
+        windowSeconds: 86400,
+        message:
+          "Too many identity verification attempts from this connection today. Please try again tomorrow or contact support.",
+      },
+      {
+        // Burst cap: a distributed script cannot drain the day's budget in minutes.
+        bucket: "didit:session:global:hour",
+        identity: "global",
+        limit: 40,
+        windowSeconds: 3600,
+        message:
+          "Identity verification is busy right now. Please try again in a little while.",
+      },
+      {
         bucket: "didit:session:global:day",
         identity: "global",
         limit: 300,
@@ -46,6 +76,7 @@ export const createDiditSession = createServerFn({ method: "POST" })
           "Identity verification is temporarily paused due to unusually high volume. Please try again later.",
       },
     ]);
+
 
 
 

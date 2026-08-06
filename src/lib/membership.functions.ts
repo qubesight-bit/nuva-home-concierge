@@ -20,11 +20,13 @@ export function validateMembershipPaymentInput(input: unknown) {
 export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
   .inputValidator(validateMembershipPaymentInput)
   .handler(async ({ data }) => {
-    // Unauthenticated + costs money per send: limit per recipient, per caller IP,
-    // and cap total daily sends before touching the email provider.
+    // Unauthenticated + costs money per send: limit per recipient, per caller IP
+    // (hour and day), and cap total sends per hour and per day before touching
+    // the email provider.
     const { enforceRateLimits, getClientIdentity } = await import(
       "@/lib/rate-limit.server"
     );
+    const ip = getClientIdentity();
     await enforceRateLimits([
       {
         bucket: "membership:email:recipient:hour",
@@ -36,10 +38,26 @@ export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
       },
       {
         bucket: "membership:email:ip:hour",
-        identity: getClientIdentity(),
+        identity: ip,
         limit: 8,
         windowSeconds: 3600,
         message: "Too many requests. Please wait a little while and try again.",
+      },
+      {
+        // A rotating list of recipient addresses from one IP is the real abuse path.
+        bucket: "membership:email:ip:day",
+        identity: ip,
+        limit: 20,
+        windowSeconds: 86400,
+        message: "Too many requests from this connection today. Please try again tomorrow.",
+      },
+      {
+        bucket: "membership:email:global:hour",
+        identity: "global",
+        limit: 60,
+        windowSeconds: 3600,
+        message:
+          "Membership emails are busy right now. Please try again in a little while.",
       },
       {
         bucket: "membership:email:global:day",
@@ -50,6 +68,7 @@ export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
           "Membership emails are temporarily paused due to unusually high volume. Please try again later.",
       },
     ]);
+
 
     const paypalLink = process.env.PAYPAL_MEMBERSHIP_LINK?.trim();
     const resendKey = process.env.RESEND_API_KEY?.trim();
