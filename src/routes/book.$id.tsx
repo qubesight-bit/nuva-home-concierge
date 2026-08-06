@@ -68,10 +68,13 @@ function BookingFlow() {
   const [duration, setDuration] = useState(3);
   const [extras, setExtras] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  const [chargedTotal, setChargedTotal] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const submitBooking = useServerFn(createBooking);
+
 
   async function confirmBooking() {
     setError(null);
