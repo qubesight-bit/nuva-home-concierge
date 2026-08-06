@@ -304,6 +304,30 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_counters: {
+        Row: {
+          bucket: string
+          count: number
+          identity: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          count?: number
+          identity: string
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          count?: number
+          identity?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -368,6 +392,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_rate_limit: {
+        Args: {
+          _bucket: string
+          _identity: string
+          _limit: number
+          _window_seconds: number
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -22,7 +22,30 @@ export function validateSignupInput(input: unknown) {
 export const registerAccount = createServerFn({ method: "POST" })
   .inputValidator(validateSignupInput)
   .handler(async ({ data }) => {
+    // Signup is unauthenticated and each new account can trigger a paid
+    // identity-verification session, so throttle by caller IP.
+    const { enforceRateLimits, getClientIdentity } = await import(
+      "@/lib/rate-limit.server"
+    );
+    await enforceRateLimits([
+      {
+        bucket: "signup:ip:hour",
+        identity: getClientIdentity(),
+        limit: 5,
+        windowSeconds: 3600,
+        message: "Too many sign-up attempts. Please try again in an hour.",
+      },
+      {
+        bucket: "signup:global:day",
+        identity: "global",
+        limit: 500,
+        windowSeconds: 86400,
+        message: "Sign-ups are temporarily paused. Please try again later.",
+      },
+    ]);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,

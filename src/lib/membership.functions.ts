@@ -20,6 +20,37 @@ export function validateMembershipPaymentInput(input: unknown) {
 export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
   .inputValidator(validateMembershipPaymentInput)
   .handler(async ({ data }) => {
+    // Unauthenticated + costs money per send: limit per recipient, per caller IP,
+    // and cap total daily sends before touching the email provider.
+    const { enforceRateLimits, getClientIdentity } = await import(
+      "@/lib/rate-limit.server"
+    );
+    await enforceRateLimits([
+      {
+        bucket: "membership:email:recipient:hour",
+        identity: data.email.toLowerCase(),
+        limit: 3,
+        windowSeconds: 3600,
+        message:
+          "We already sent payment links to this address. Please check your inbox, or try again in an hour.",
+      },
+      {
+        bucket: "membership:email:ip:hour",
+        identity: getClientIdentity(),
+        limit: 8,
+        windowSeconds: 3600,
+        message: "Too many requests. Please wait a little while and try again.",
+      },
+      {
+        bucket: "membership:email:global:day",
+        identity: "global",
+        limit: 500,
+        windowSeconds: 86400,
+        message:
+          "Membership emails are temporarily paused due to unusually high volume. Please try again later.",
+      },
+    ]);
+
     const paypalLink = process.env.PAYPAL_MEMBERSHIP_LINK?.trim();
     const resendKey = process.env.RESEND_API_KEY?.trim();
     const from =
@@ -35,6 +66,7 @@ export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
         "Membership emails are not configured yet. Missing RESEND_API_KEY.",
       );
     }
+
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
