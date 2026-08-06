@@ -1,6 +1,88 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  computeBookingPrice,
+  MAX_DURATION_HOURS,
+  MIN_DURATION_HOURS,
+  type CustomExtra,
+} from "@/lib/booking-pricing";
+
+/**
+ * Booking creation input. Note what is NOT here: any price, total or amount.
+ * The client picks options; the server prices them.
+ */
+export const bookingCreateSchema = z.object({
+  providerId: z.string().uuid(),
+  serviceId: z.string().trim().min(1).max(40),
+  bookingDate: z.string().trim().min(1).max(40),
+  bookingTime: z.string().trim().min(1).max(20),
+  durationHours: z.number().int().min(MIN_DURATION_HOURS).max(MAX_DURATION_HOURS),
+  extras: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
+  notes: z.string().trim().max(1000).optional(),
+});
+
+export function validateBookingCreateInput(input: unknown) {
+  return bookingCreateSchema.parse(input);
+}
+
+/**
+ * Creates a booking with a server-computed total.
+ *
+ * The provider's hourly rate and custom extra prices are read from the
+ * database; service surcharges and standard extras come from the server-side
+ * price table. A tampered client cannot influence the charged amount, and the
+ * database additionally blocks direct inserts and later price edits.
+ */
+export const createBooking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(validateBookingCreateInput)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Provider must be real, active, published and verified — checked server-side.
+    const { data: provider, error: providerError } = await supabase
+      .from("providers")
+      .select("id, user_id, rate_per_hour, is_active, is_published, custom_extras")
+      .eq("id", data.providerId)
+      .maybeSingle();
+    if (providerError) throw new Error(providerError.message);
+    if (!provider || !provider.is_active || !provider.is_published) {
+      throw new Error("This provider is not available for booking.");
+    }
+    if (provider.user_id === userId) {
+      throw new Error("You cannot book your own listing.");
+    }
+
+    const price = computeBookingPrice({
+      providerRatePerHour: Number(provider.rate_per_hour),
+      serviceId: data.serviceId,
+      durationHours: data.durationHours,
+      extraIds: data.extras,
+      customExtras: (provider.custom_extras as CustomExtra[] | null) ?? [],
+    });
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inserted, error: insertError } = await supabaseAdmin
+      .from("bookings")
+      .insert({
+        client_user_id: userId,
+        provider_id: provider.id,
+        service: price.serviceName,
+        booking_date: data.bookingDate,
+        booking_time: data.bookingTime,
+        duration_hours: data.durationHours,
+        extras: data.extras,
+        total_cents: price.totalCents,
+        notes: data.notes ?? null,
+      })
+      .select("id, total_cents")
+      .single();
+    if (insertError) throw new Error(insertError.message);
+
+    return { ok: true, bookingId: inserted.id, totalCents: inserted.total_cents };
+  });
+
 
 /**
  * Provider-side booking status transitions. Any other value is rejected.
