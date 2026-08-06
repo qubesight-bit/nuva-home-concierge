@@ -29,7 +29,7 @@ export function ManualVerifyCard({ userId, approved }: { userId: string; approve
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [existing, setExisting] = useState<{ status: string } | null>(null);
+  const [existing, setExisting] = useState<{ status: string; review_notes: string | null; reviewed_at: string | null } | null>(null);
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function ManualVerifyCard({ userId, approved }: { userId: string; approve
     (async () => {
       const { data } = await supabase
         .from("id_verifications")
-        .select("status")
+        .select("status, review_notes, reviewed_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(1)
