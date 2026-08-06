@@ -82,24 +82,28 @@ function BookingFlow() {
     setSaving(true);
     // Only persist bookings for real DB provider ids (UUIDs). Mock listings stay UI-only.
     if (UUID_RE.test(provider.id)) {
-      const { error: insertError } = await supabase.from("bookings").insert({
-        client_user_id: user.id,
-        provider_id: provider.id,
-        service: selectedService.name,
-        booking_date: date,
-        booking_time: time,
-        duration_hours: duration,
-        extras,
-        total_cents: total * 100,
-      });
-      if (insertError) {
+      try {
+        // The server prices the booking — no amount is sent from the browser.
+        const result = await submitBooking({
+          data: {
+            providerId: provider.id,
+            serviceId: service,
+            bookingDate: date,
+            bookingTime: time,
+            durationHours: duration,
+            extras,
+          },
+        });
+        setChargedTotal(result.totalCents / 100);
+      } catch (e) {
         setSaving(false);
-        return setError(insertError.message);
+        return setError(e instanceof Error ? e.message : "Could not confirm your booking.");
       }
     }
     setSaving(false);
     setConfirmed(true);
   }
+
 
   const days = useMemo(() => nextDays(10), []);
   const selectedService = SERVICES.find((s) => s.id === service)!;
