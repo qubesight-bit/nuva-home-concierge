@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { assertSafeUrl, safeFetch } from "@/lib/safe-fetch";
 
 export const membershipPaymentSchema = z.object({
   email: z.string().trim().email().max(255),
@@ -87,7 +88,11 @@ export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
     }
 
 
-    const response = await fetch("https://api.resend.com/emails", {
+    // The PayPal link comes from server env, but we still verify it points at
+    // PayPal before emailing it out — a bad env value must never become a link.
+    assertSafeUrl(paymentLink, ["www.paypal.com", "paypal.com", "www.paypal.me", "paypal.me"]);
+
+    const response = await safeFetch("https://api.resend.com/emails", ["api.resend.com"], {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,

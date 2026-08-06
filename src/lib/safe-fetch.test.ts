@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertSafeUrl, SsrfBlockedError } from "./safe-fetch.server";
+import { assertSafeUrl, SsrfBlockedError } from "./safe-fetch";
 
 const ALLOW = ["api.resend.com", "verification.didit.me"];
 
