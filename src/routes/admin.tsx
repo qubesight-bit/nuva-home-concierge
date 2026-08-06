@@ -220,23 +220,77 @@ function AdminPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
-                  <button
-                    onClick={() => decide(row, "approved")}
-                    disabled={busyId === row.id}
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
-                  >
-                    {busyId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => decide(row, "rejected")}
-                    disabled={busyId === row.id}
-                    className="inline-flex items-center gap-2 rounded-full border border-destructive/40 px-5 py-2.5 text-sm font-semibold text-destructive disabled:opacity-60"
-                  >
-                    <XCircle className="h-4 w-4" /> Reject
-                  </button>
+                {(audit[row.user_id]?.length ?? 0) > 0 && (
+                  <div className="mt-5 rounded-2xl bg-muted/40 px-4 py-3">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <History className="h-3.5 w-3.5" /> Review history
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {audit[row.user_id]!.map((a) => (
+                        <li key={a.id} className="text-sm">
+                          <span className={a.action === "approved" ? "font-semibold text-primary" : "font-semibold text-destructive"}>
+                            {a.action === "approved" ? "Approved" : "Rejected"}
+                          </span>{" "}
+                          by {adminNames[a.admin_id] ?? a.admin_id} on {new Date(a.created_at).toLocaleString()}
+                          {a.reason ? <span className="text-muted-foreground"> — {a.reason}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-5 border-t border-border pt-4">
+                  {rejectingId === row.id ? (
+                    <div className="space-y-3">
+                      <label htmlFor={`reason-${row.id}`} className="text-sm font-medium">
+                        Rejection reason (shared with the provider)
+                      </label>
+                      <textarea
+                        id={`reason-${row.id}`}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        rows={3}
+                        placeholder="e.g. The selfie does not show today's date clearly."
+                        className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => decide(row, "rejected", reason.trim())}
+                          disabled={busyId === row.id || reason.trim().length < 5}
+                          className="inline-flex items-center gap-2 rounded-full bg-destructive px-5 py-2.5 text-sm font-semibold text-destructive-foreground disabled:opacity-60"
+                        >
+                          {busyId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                          Confirm rejection
+                        </button>
+                        <button
+                          onClick={() => { setRejectingId(null); setReason(""); }}
+                          className="rounded-full border border-border px-5 py-2.5 text-sm font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => decide(row, "approved")}
+                        disabled={busyId === row.id}
+                        className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-60"
+                      >
+                        {busyId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => { setRejectingId(row.id); setReason(""); }}
+                        disabled={busyId === row.id}
+                        className="inline-flex items-center gap-2 rounded-full border border-destructive/40 px-5 py-2.5 text-sm font-semibold text-destructive disabled:opacity-60"
+                      >
+                        <XCircle className="h-4 w-4" /> Reject
+                      </button>
+                    </div>
+                  )}
                 </div>
+
               </div>
             );
           })
