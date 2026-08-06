@@ -223,7 +223,7 @@ function AdminPage() {
                 {(audit[row.user_id]?.length ?? 0) > 0 && (
                   <div className="mt-5 rounded-2xl bg-muted/40 px-4 py-3">
                     <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      <History className="h-3.5 w-3.5" /> Review history
+                      <HistoryIcon className="h-3.5 w-3.5" /> Review history
                     </p>
                     <ul className="mt-2 space-y-1.5">
                       {audit[row.user_id]!.map((a) => (
