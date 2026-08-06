@@ -23,17 +23,35 @@ export const registerAccount = createServerFn({ method: "POST" })
   .inputValidator(validateSignupInput)
   .handler(async ({ data }) => {
     // Signup is unauthenticated and each new account can trigger a paid
-    // identity-verification session, so throttle by caller IP.
+    // identity-verification session, so account creation itself is the
+    // spend surface: throttle by caller IP per hour AND per day, and cap
+    // total sign-ups per hour and per day.
     const { enforceRateLimits, getClientIdentity } = await import(
       "@/lib/rate-limit.server"
     );
+    const ip = getClientIdentity();
     await enforceRateLimits([
       {
         bucket: "signup:ip:hour",
-        identity: getClientIdentity(),
+        identity: ip,
         limit: 5,
         windowSeconds: 3600,
         message: "Too many sign-up attempts. Please try again in an hour.",
+      },
+      {
+        // Without this, 5/hour still means 120 free accounts a day per IP.
+        bucket: "signup:ip:day",
+        identity: ip,
+        limit: 10,
+        windowSeconds: 86400,
+        message: "Too many sign-up attempts from this connection today. Please try again tomorrow.",
+      },
+      {
+        bucket: "signup:global:hour",
+        identity: "global",
+        limit: 60,
+        windowSeconds: 3600,
+        message: "Sign-ups are busy right now. Please try again in a little while.",
       },
       {
         bucket: "signup:global:day",
@@ -43,6 +61,7 @@ export const registerAccount = createServerFn({ method: "POST" })
         message: "Sign-ups are temporarily paused. Please try again later.",
       },
     ]);
+
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
