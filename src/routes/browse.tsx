@@ -41,13 +41,13 @@ function BrowsePage() {
   const setCountry = (code: string) =>
     navigate({
       to: "/browse",
-      search: (prev: { country: string; category: string }) => ({ ...prev, country: code }),
+      search: (prev: { country?: string; category?: string }) => ({ ...prev, country: code }),
       replace: true,
     });
   const setCategory = (id: CategoryFilter) =>
     navigate({
       to: "/browse",
-      search: (prev: { country: string; category: string }) => ({ ...prev, category: id }),
+      search: (prev: { country?: string; category?: string }) => ({ ...prev, category: id }),
       replace: true,
     });
 
@@ -67,7 +67,7 @@ function BrowsePage() {
     if (availableCountries.some((c) => c.code === detected)) {
       navigate({
         to: "/browse",
-        search: (prev: { country: string; category: string }) => ({ ...prev, country: detected }),
+        search: (prev: { country?: string; category?: string }) => ({ ...prev, country: detected }),
         replace: true,
       });
     }
