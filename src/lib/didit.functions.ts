@@ -17,6 +17,38 @@ export const createDiditSession = createServerFn({ method: "POST" })
     const apiKey = process.env["DIDIT_API_KEY"];
     if (!apiKey) throw new Error("Identity verification is not configured yet.");
 
+    // Each Didit session costs credits — throttle per user and cap total spend
+    // before the paid API is ever called.
+    const { enforceRateLimits } = await import("@/lib/rate-limit.server");
+    await enforceRateLimits([
+      {
+        bucket: "didit:session:user:hour",
+        identity: context.userId,
+        limit: 3,
+        windowSeconds: 3600,
+        message:
+          "You have started identity verification several times already. Please finish the open session or try again in an hour.",
+      },
+      {
+        bucket: "didit:session:user:day",
+        identity: context.userId,
+        limit: 8,
+        windowSeconds: 86400,
+        message:
+          "Daily identity verification limit reached for this account. Please try again tomorrow or contact support.",
+      },
+      {
+        bucket: "didit:session:global:day",
+        identity: "global",
+        limit: 300,
+        windowSeconds: 86400,
+        message:
+          "Identity verification is temporarily paused due to unusually high volume. Please try again later.",
+      },
+    ]);
+
+
+
     const origin = process.env["PUBLIC_SITE_URL"] ?? "https://nuva.lovable.app";
 
     const res = await fetch("https://verification.didit.me/v3/session/", {
