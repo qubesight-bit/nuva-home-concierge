@@ -90,7 +90,7 @@ export const sendMembershipPaymentLink = createServerFn({ method: "POST" })
 
     // The PayPal link comes from server env, but we still verify it points at
     // PayPal before emailing it out — a bad env value must never become a link.
-    assertSafeUrl(paymentLink, ["www.paypal.com", "paypal.com", "www.paypal.me", "paypal.me"]);
+    assertSafeUrl(paypalLink, ["www.paypal.com", "paypal.com", "www.paypal.me", "paypal.me"]);
 
     const response = await safeFetch("https://api.resend.com/emails", ["api.resend.com"], {
       method: "POST",
