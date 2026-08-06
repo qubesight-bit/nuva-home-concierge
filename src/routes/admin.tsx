@@ -38,12 +38,25 @@ interface ProfileLite {
   verification_status: string;
 }
 
+interface AuditRow {
+  id: string;
+  user_id: string;
+  admin_id: string;
+  action: string;
+  reason: string | null;
+  created_at: string;
+}
+
 function AdminPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [rows, setRows] = useState<VerificationRow[]>([]);
   const [profiles, setProfiles] = useState<Record<string, ProfileLite>>({});
+  const [audit, setAudit] = useState<Record<string, AuditRow[]>>({});
+  const [adminNames, setAdminNames] = useState<Record<string, string>>({});
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -76,13 +89,36 @@ function AdminPage() {
     setRows(list);
 
     if (list.length) {
+      const userIds = list.map((r) => r.user_id);
       const { data: p } = await supabase
         .from("profiles")
         .select("id, display_name, email, verification_status")
-        .in("id", list.map((r) => r.user_id));
+        .in("id", userIds);
       const map: Record<string, ProfileLite> = {};
       for (const row of (p ?? []) as ProfileLite[]) map[row.id] = row;
       setProfiles(map);
+
+      const { data: a } = await supabase
+        .from("verification_audit_log")
+        .select("id, user_id, admin_id, action, reason, created_at")
+        .in("user_id", userIds)
+        .order("created_at", { ascending: false });
+      const auditMap: Record<string, AuditRow[]> = {};
+      for (const row of (a ?? []) as AuditRow[]) {
+        (auditMap[row.user_id] ??= []).push(row);
+      }
+      setAudit(auditMap);
+
+      const adminIds = [...new Set((a ?? []).map((r) => (r as AuditRow).admin_id))];
+      if (adminIds.length) {
+        const { data: ap } = await supabase
+          .from("profiles")
+          .select("id, display_name, email")
+          .in("id", adminIds);
+        const names: Record<string, string> = {};
+        for (const row of ap ?? []) names[row.id] = row.display_name ?? row.email ?? row.id;
+        setAdminNames(names);
+      }
     }
     setDataLoading(false);
   }, [user]);
@@ -95,22 +131,33 @@ function AdminPage() {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
-  async function decide(row: VerificationRow, status: "approved" | "rejected") {
+  async function decide(row: VerificationRow, status: "approved" | "rejected", notes?: string) {
     if (!user) return;
     setErr(null);
     setBusyId(row.id);
+    const now = new Date().toISOString();
     const { error: e1 } = await supabase
       .from("id_verifications")
-      .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .update({ status, reviewed_by: user.id, reviewed_at: now, review_notes: notes ?? null })
       .eq("id", row.id);
     const { error: e2 } = await supabase
       .from("profiles")
-      .update({ verification_status: status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .update({ verification_status: status, reviewed_by: user.id, reviewed_at: now, review_notes: notes ?? null })
       .eq("id", row.user_id);
+    const { error: e3 } = await supabase.from("verification_audit_log").insert({
+      verification_id: row.id,
+      user_id: row.user_id,
+      admin_id: user.id,
+      action: status,
+      reason: notes ?? null,
+    });
     setBusyId(null);
-    if (e1 || e2) return setErr(e1?.message ?? e2?.message ?? "Update failed.");
+    if (e1 || e2 || e3) return setErr(e1?.message ?? e2?.message ?? e3?.message ?? "Update failed.");
+    setRejectingId(null);
+    setReason("");
     await load();
   }
+
 
   if (loading || !user || (dataLoading && isAdmin === null)) {
     return <div className="mx-auto max-w-lg px-4 py-32 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" /></div>;
