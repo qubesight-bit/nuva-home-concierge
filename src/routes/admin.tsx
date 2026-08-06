@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { ShieldCheck, Loader2, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { ShieldCheck, Loader2, CheckCircle2, XCircle, ExternalLink, History as HistoryIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
