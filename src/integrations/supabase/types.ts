@@ -375,7 +375,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_profile_approved: { Args: { _user_id: string }; Returns: boolean }
       is_provider_verified: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
