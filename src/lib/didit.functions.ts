@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { safeFetch } from "@/lib/safe-fetch";
 
 /**
  * Per-session config — NOT a secret, NOT an env var.
@@ -82,7 +83,7 @@ export const createDiditSession = createServerFn({ method: "POST" })
 
     const origin = process.env["PUBLIC_SITE_URL"] ?? "https://nuva.lovable.app";
 
-    const res = await fetch("https://verification.didit.me/v3/session/", {
+    const res = await safeFetch("https://verification.didit.me/v3/session/", ["verification.didit.me"], {
       method: "POST",
       headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
